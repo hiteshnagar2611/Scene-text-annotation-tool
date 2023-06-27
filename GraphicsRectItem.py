@@ -41,6 +41,7 @@ class GraphicsRectItem(QGraphicsRectItem):
         self.handleSelected = None
         self.mousePressPos = None
         self.mousePressRect = None
+        self.rotationAngle = 0
         self.setAcceptHoverEvents(True)
         self.setFlag(QGraphicsItem.ItemIsMovable, True)
         self.setFlag(QGraphicsItem.ItemIsSelectable, True)
@@ -65,12 +66,13 @@ class GraphicsRectItem(QGraphicsRectItem):
                 return k
         return None
 
-    # def update_coordinates(self):
-    #     rect = self.mapRectToScene(self.rect())
-    #     self.data['x'] = rect.x()
-    #     self.data['y'] = rect.y()
-    #     self.data['width'] = self.rect().width()
-    #     self.data['height'] = self.rect().height()
+    def rotate(self, angle):
+        """
+        Rotate the item by the given angle (in degrees).
+        """
+        self.rotationAngle += angle
+        self.setRotation(self.rotationAngle)
+        self.updateHandlesPos()
 
     def hoverMoveEvent(self, moveEvent):
         """
@@ -273,9 +275,13 @@ class GraphicsRectItem(QGraphicsRectItem):
         """
         Paint the node in the graphic self.view.
         """
+        painter.setRenderHint(QPainter.Antialiasing)
         painter.setBrush(QBrush(QColor(255, 0, 0, 100)))
         painter.setPen(QPen(QColor(0, 0, 0), 1.0, Qt.SolidLine))
+        painter.save()
+        painter.rotate(self.rotation)
         painter.drawRect(self.rect())
+        painter.restore()
 
         painter.setRenderHint(QPainter.Antialiasing)
         painter.setBrush(QBrush(QColor(255, 0, 0, 255)))
