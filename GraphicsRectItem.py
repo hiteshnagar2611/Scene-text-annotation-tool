@@ -50,13 +50,6 @@ class GraphicsRectItem(QGraphicsRectItem):
         self.updateHandlesPos()
         self.setZValue(100)
         self.data = {}
-        # # self.scene = scene
-        # rect = self.mapRectToScene(self.rect())
-        # # rect = self.ma
-        # self.data['x'] = rect.x()
-        # self.data['y'] = rect.y()
-        # self.data['width'] = self.rect().width()
-        # self.data['height'] = self.rect().height()
     def handleAt(self, point):
         """
         Returns the resize handle below the given point.
@@ -276,10 +269,14 @@ class GraphicsRectItem(QGraphicsRectItem):
         Paint the node in the graphic self.view.
         """
         painter.setRenderHint(QPainter.Antialiasing)
-        painter.setBrush(QBrush(QColor(255, 0, 0, 100)))
+        # painter.setBrush(QBrush(QColor(255, 0, 0, 100)))
+        if self.isSelected():
+            painter.setBrush(QBrush(QColor(0, 255, 0, 20)))
+        else:
+            painter.setBrush(QBrush(QColor(255, 0, 0, 20)))
         painter.setPen(QPen(QColor(0, 0, 0), 1.0, Qt.SolidLine))
         painter.save()
-        painter.rotate(self.rotation)
+        painter.rotate(self.rotation())
         painter.drawRect(self.rect())
         painter.restore()
 

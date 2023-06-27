@@ -1,4 +1,4 @@
-from PyQt5 import QtWidgets,QtGui
+from PyQt5 import QtWidgets,QtGui,QtCore
 import os
 import json
 import glob
@@ -33,8 +33,8 @@ class MainWindow(QWidget):
         self.button_next.clicked.connect(self.button_click_next)
 
         self.button_save = QPushButton("Save")
-        
-
+        self.button_rotate = QPushButton("Rotate")
+ 
 
         self.button_delete = QPushButton("Delete")  
         self.button_save_crop = QPushButton("Save Crop")
@@ -57,6 +57,7 @@ class MainWindow(QWidget):
         hbox.addWidget(self.button_delete)  
         hbox.addWidget(self.button_reset)
         hbox.addWidget(self.button_save_crop)
+        hbox.addWidget(self.button_rotate)
 
         vbox2 = QVBoxLayout()
 
@@ -83,7 +84,7 @@ class MainWindow(QWidget):
         self.button_save_crop.clicked.connect(self.save_image_inside_rectangle)
         self.button_reset.clicked.connect(self.reset_image)
         self.button_delete.clicked.connect(self.delete_rectangle)
-
+        self.button_rotate.clicked.connect(self.rotate_rec)
     def load_images_from_folder(self, folder):
         self.image_paths = []
         for filename in os.listdir(folder):
@@ -122,7 +123,7 @@ class MainWindow(QWidget):
                         data = self.coordinates_data[image_path][i]
                         item = GraphicsRectItem(QRectF(QPointF(0,0),QSizeF(data['width'],data['height'])))
                         item.moveBy(data['x'], data['y'])
-                        item.rotate(data['rotation'])
+                        item.setRotation(data['rotation'])
                         self.scene.addItem(item)
                         t = CustomLineEdit(f"{data['x'],data['y']}")
                         self.text_data[image_path][t.index] = t
@@ -161,7 +162,7 @@ class MainWindow(QWidget):
                     data["y"] = rect.y()
                     data["height"] = item.rect().height()
                     data["width"] = item.rect().width()
-                    data['rotation'] = item.rotation()
+                    data["rotation"] = item.rotation()
                     data["text"] = f"{rect.x(),rect.y()}"
                     self.coordinates_data[image_path][i] = data
 
@@ -202,6 +203,7 @@ class MainWindow(QWidget):
                     # print(f"saved at {json_file}")
             self.scene.update()
             self.load_image()
+
     def button_click_prev(self):
         if self.image_paths:
             self.current_image_index -= 1
@@ -209,6 +211,7 @@ class MainWindow(QWidget):
                 self.current_image_index = len(self.image_paths) - 1
             self.load_image()
             self.update()
+
     def button_click_next(self):
         if self.image_paths:
             self.current_image_index += 1
@@ -238,12 +241,11 @@ class MainWindow(QWidget):
                             self.coordinates_data[image_path][i] = rectangle_data
             else:
                 print(f"Coordinates folder not found for image: {image_name}")
-        # print("Coordinates loaded from JSON.")
+
     def select_rectangle(self):
-        # print(self.coordinates_data)
+
         self.selected_index = self.label_coordinates.currentItem()
         rec = self.label_coordinates.currentItem().text()
-        # self.label_coordinates
         for i in range(self.scroll_layout.count()):
             item = self.scroll_layout.itemAt(i).widget()
 
@@ -257,7 +259,24 @@ class MainWindow(QWidget):
             else:
                 line_edit = item
                 line_edit.focusOutEvent(QtGui.QFocusEvent(QtGui.QKeyEvent.FocusOut))
+
+        for item in self.scene.items():
+            if isinstance(item, GraphicsRectItem):
+                rect = item.mapToScene(item.rect().topLeft())
+                data = f"Rec:- {rect.x(), rect.y()}"
+                if data == rec:
+                    item.setSelected(True)
+                else:
+                    item.setSelected(False)
     
+    def rotate_rec(self):
+        for item in self.scene.items():
+            if isinstance(item,GraphicsRectItem):
+                if item.isSelected():
+                    item.rotate(5)
+                    # self.scene.update()
+                    break
+
     def save_image_inside_rectangle(self):
         if not self.coordinates_data:
             print("No coordinates to save.")
@@ -302,18 +321,16 @@ class MainWindow(QWidget):
         image_path = self.image_paths[self.current_image_index]
         # print(self.coordinates_data)
         if image_path in self.coordinates_data:
-            id = self.label_coordinates.currentItem().text()
-            for item in self.scene.items():
-                if isinstance(item,GraphicsRectItem):
-                    rect = item.mapToScene(item.rect().topLeft())
-                    data = f"Rec:- {rect.x(),rect.y()}"
-                    pattern = f"{rect.x()}_{rect.y()}_{item.rect().width()}_{item.rect().height()}"
-                    if data == id:
-                        self.scene.removeItem(item)
-                        break
-            # rectangle_data = self.coordinates_data[image_path][self.selected_index]
-            
-            # data = f"{rectangle_data['start_point']['x']}_{rectangle_data['start_point']['y']}_{rectangle_data['end_point']['x']}_{rectangle_data['end_point']['y']}"
+            if self.label_coordinates.currentItem().text() is not None:
+                id = self.label_coordinates.currentItem().text()
+                for item in self.scene.items():
+                    if isinstance(item,GraphicsRectItem):
+                        rect = item.mapToScene(item.rect().topLeft())
+                        data = f"Rec:- {rect.x(),rect.y()}"
+                        pattern = f"{rect.x()}_{rect.y()}_{item.rect().width()}_{item.rect().height()}"
+                        if data == id:
+                            self.scene.removeItem(item)
+                            break
             d = self.coordinates_data[image_path]
             print(self.text_data)
             for key in d:
