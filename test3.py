@@ -457,6 +457,8 @@ class MainWindow(QWidget):
                 destination_path = os.path.join(folder_path, os.path.relpath(source_path, source_directory))
                 shutil.copy2(source_path, destination_path)
 
+        self.load_image()
+        self.load_coordinates_from_json()
         
 
 
