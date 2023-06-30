@@ -96,16 +96,18 @@ class MainWindow(QWidget):
     def load_images_from_folder(self, folder):
         self.image_paths = []
         for filename in os.listdir(folder):
-            # print("Images")
             if filename.endswith(".jpg") or filename.endswith(".png") or filename.endswith(".jpeg"):
                 self.image_paths.append(os.path.join(folder, filename))
         if self.image_paths:
-            self.current_image_index = 0
-            self.load_image()
+            self.load_last_image_path()  # Load the last image path if available
+            if self.current_image_index >= len(self.image_paths):
+                self.current_image_index = 0
+        self.load_image()
 
     def load_image(self):
         self.load_coordinates_from_json()
         if self.image_paths:
+            
             image_path = self.image_paths[self.current_image_index]
             self.scene.image= image_path
             self.pixmap = QPixmap(image_path)
@@ -142,6 +144,7 @@ class MainWindow(QWidget):
                 self.box.addWidget(self.scrollable)
             self.button_save.clicked.connect(self.save_coordinates_to_json)
             self.scene.add_list()
+            self.save_last_image_path()
             # self.scene.update()
         # self.save_coordinates_to_json()
     def save_coordinates_to_json(self):
@@ -214,6 +217,7 @@ class MainWindow(QWidget):
 
     def button_click_prev(self):
         if self.image_paths:
+            self.save_last_image_path()  # Save the last image path
             self.current_image_index -= 1
             if self.current_image_index < 0:
                 self.current_image_index = len(self.image_paths) - 1
@@ -222,6 +226,7 @@ class MainWindow(QWidget):
 
     def button_click_next(self):
         if self.image_paths:
+            self.save_last_image_path()  # Save the last image path
             self.current_image_index += 1
             if self.current_image_index >= len(self.image_paths):
                 self.current_image_index = 0
@@ -456,9 +461,26 @@ class MainWindow(QWidget):
                 source_path = os.path.join(root, file_name)
                 destination_path = os.path.join(folder_path, os.path.relpath(source_path, source_directory))
                 shutil.copy2(source_path, destination_path)
-
+        
         self.load_image()
         self.load_coordinates_from_json()
+
+    def save_last_image_path(self):
+        if self.current_image_index < len(self.image_paths):
+            data = {'last_image_path': self.image_paths[self.current_image_index]}
+            with open('last_image.json', 'w') as f:
+                json.dump(data, f)
+
+    def load_last_image_path(self):
+        if os.path.exists('last_image.json'):
+            with open('last_image.json', 'r') as f:
+                data = json.load(f)
+                last_image_path = data.get('last_image_path')
+                if last_image_path and last_image_path in self.image_paths:
+                    self.current_image_index = self.image_paths.index(last_image_path)
+
+
+
         
 
 
