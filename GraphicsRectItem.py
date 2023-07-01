@@ -18,7 +18,7 @@ class GraphicsRectItem(QGraphicsRectItem):
     handleBottomMiddle = 7
     handleBottomRight = 8
 
-    handleSize = +15
+    handleSize = +10
     handleSpace = -4.0
 
     handleCursors = {
