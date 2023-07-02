@@ -18,7 +18,7 @@ class GraphicsRectItem(QGraphicsRectItem):
     handleBottomMiddle = 7
     handleBottomRight = 8
 
-    handleSize = +15
+    handleSize = +12
     handleSpace = -4.0
 
     handleCursors = {
@@ -278,7 +278,6 @@ class GraphicsRectItem(QGraphicsRectItem):
         painter.save()
         painter.rotate(self.rotation())
         painter.drawRect(self.rect())
-        painter.restore()
 
         painter.setRenderHint(QPainter.Antialiasing)
         painter.setBrush(QBrush(QColor(255, 0, 0, 255)))
@@ -286,3 +285,4 @@ class GraphicsRectItem(QGraphicsRectItem):
         for handle, rect in self.handles.items():
             if self.handleSelected is None or handle == self.handleSelected:
                 painter.drawRect(rect)
+        painter.restore()
