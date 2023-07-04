@@ -34,27 +34,7 @@ class GraphicsScene(QtWidgets.QGraphicsScene):
             self._current_rect_item.setRect(r)
             # self.index += 1
             # self._current_rect_item.index = (self._start)
-        print("pressed")
-        rect = None
-        for item in self.items():
-            if isinstance(item, QGraphicsRectItem) and item.isSelected():
-                data = item.mapToScene(item.rect().topLeft())
-                rect = f"Rec:- {data.x(), data.y()}"
-                break
-
-        for i in range(self.scroll_layout.count()):
-            item = self.scroll_layout.itemAt(i).widget()
-
-            if isinstance(item, CustomLineEdit):
-                if f"Rec:- {item.index}" == rect:
-                    line_edit = item
-                    line_edit.focusInEvent(QtGui.QFocusEvent(QtGui.QKeyEvent.FocusIn))
-                else:
-                    line_edit = item
-                    line_edit.focusOutEvent(QtGui.QFocusEvent(QtGui.QKeyEvent.FocusOut))
-            else:
-                line_edit = item
-                line_edit.focusOutEvent(QtGui.QFocusEvent(QtGui.QKeyEvent.FocusOut))  
+         
         super(GraphicsScene, self).mousePressEvent(event)
         self.update()
 
@@ -71,6 +51,28 @@ class GraphicsScene(QtWidgets.QGraphicsScene):
         super(GraphicsScene, self).mouseReleaseEvent(event)
         self.add_list()
         self.update()
+
+    def mouseDoubleClickEvent(self, event):
+
+        rect = None
+        for item in self.selectedItems():
+            if isinstance(item, QGraphicsRectItem) and item.isSelected():
+                data = item.mapToScene(item.rect().topLeft())
+                rect = f"Rec:- {data.x(), data.y()}"
+                break
+
+        for i in range(self.scroll_layout.count()):
+            item = self.scroll_layout.itemAt(i).widget()
+
+            if isinstance(item, CustomLineEdit):
+                if f"Rec:- {item.index}" == rect:
+                    line_edit = item
+                    line_edit.focusInEvent(QtGui.QFocusEvent(QtGui.QKeyEvent.FocusIn))
+                else:
+                    line_edit = item
+                    line_edit.focusOutEvent(QtGui.QFocusEvent(QtGui.QKeyEvent.FocusOut))
+
+        return super().mouseDoubleClickEvent(event)
 
     def drawBackground(self, painter: QPainter, rect: 'QRectF'):
         # Call the base implementation to draw the default background

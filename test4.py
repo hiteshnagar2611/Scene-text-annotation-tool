@@ -54,7 +54,7 @@ class MainWindow(QWidget):
 
         self.label_coordinates = QListWidget()
         self.box = QHBoxLayout()
-        self.box.addWidget(self.label_coordinates)
+        # self.box.addWidget(self.label_coordinates)
 
         self.scrollable = QScrollArea()
         self.scrollable.setWidgetResizable(True)
@@ -153,8 +153,7 @@ class MainWindow(QWidget):
             # self.scene.update()
         # self.save_coordinates_to_json()
     def save_coordinates_to_json(self):
-        
-        if self.image_paths:
+        if self.image_paths and  len(self.scene.items()) != 0:
             image_path = self.image_paths[self.current_image_index]
             for i,item in enumerate(self.scene.items()):
                 data = {
@@ -217,8 +216,8 @@ class MainWindow(QWidget):
                         json.dump(save, f, indent=4)
 
                     # print(f"saved at {json_file}")
-            self.scene.update()
             self.load_image()
+            self.scene.update()
 
     def button_click_prev(self):
         if self.image_paths:
@@ -327,28 +326,27 @@ class MainWindow(QWidget):
                 print(f"Cropped image saved: {image_file}")
 
     def delete_rectangle(self):
-        if self.selected_index == -1:
-            self.message_box.setIcon(QMessageBox.Information)
-            self.message_box.setText("Please select a rectangle")
-            self.message_box.setWindowTitle("Information")
-            self.message_box.exec_()
-            return
+        # if self.selected_index == -1:
+        #     self.message_box.setIcon(QMessageBox.Information)
+        #     self.message_box.setText("Please select a rectangle")
+        #     self.message_box.setWindowTitle("Information")
+        #     self.message_box.exec_()
+        #     return
         
         pattern = ""
         data = ""
         image_path = self.image_paths[self.current_image_index]
         # print(self.coordinates_data)
         if image_path in self.coordinates_data:
-            if self.label_coordinates.currentItem().text() is not None:
-                id = self.label_coordinates.currentItem().text()
-                for item in self.scene.items():
-                    if isinstance(item,GraphicsRectItem):
-                        rect = item.mapToScene(item.rect().topLeft())
-                        data = f"Rec:- {rect.x(),rect.y()}"
-                        pattern = f"{rect.x()}_{rect.y()}_{item.rect().width()}_{item.rect().height()}"
-                        if data == id:
-                            self.scene.removeItem(item)
-                            break
+            # if self.label_coordinates.currentItem().text() is not None:
+                # id = self.label_coordinates.currentItem().text()
+            for item in self.scene.items():
+                if isinstance(item,GraphicsRectItem) and item.isSelected():
+                    rect = item.mapToScene(item.rect().topLeft())
+                    data = f"Rec:- {rect.x(),rect.y()}"
+                    pattern = f"{rect.x()}_{rect.y()}_{item.rect().width()}_{item.rect().height()}"
+                    self.scene.removeItem(item)
+                    break
             d = self.coordinates_data[image_path]
             print(self.text_data)
             for key in d:
