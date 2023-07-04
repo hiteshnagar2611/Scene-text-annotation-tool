@@ -8,9 +8,10 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from GraphicsRectItem import GraphicsRectItem
+from CustomLineEdit import CustomLineEdit
 
 class GraphicsScene(QtWidgets.QGraphicsScene):
-    def __init__(self, image,label_coordinates,coor_data,parent = None):
+    def __init__(self, image,label_coordinates,coor_data,scroll_layout,parent = None):
         super(GraphicsScene, self).__init__(parent)
         self._start = QtCore.QPointF()
         self._current_rect_item = None
@@ -19,8 +20,9 @@ class GraphicsScene(QtWidgets.QGraphicsScene):
         # self.index = 0
         self.setSceneRect(0,0,self.background_image.width(),self.background_image.height())
         self.label_c = label_coordinates
-        self.label_c.clicked.connect(self.highlight_item)
         self.coordinates_data = coor_data
+        self.scroll_layout = scroll_layout
+
     def mousePressEvent(self, event):
         if self.itemAt(event.scenePos(), QtGui.QTransform()) is None:
             self._current_rect_item = GraphicsRectItem()
@@ -32,6 +34,27 @@ class GraphicsScene(QtWidgets.QGraphicsScene):
             self._current_rect_item.setRect(r)
             # self.index += 1
             # self._current_rect_item.index = (self._start)
+        print("pressed")
+        rect = None
+        for item in self.items():
+            if isinstance(item, QGraphicsRectItem) and item.isSelected():
+                data = item.mapToScene(item.rect().topLeft())
+                rect = f"Rec:- {data.x(), data.y()}"
+                break
+
+        for i in range(self.scroll_layout.count()):
+            item = self.scroll_layout.itemAt(i).widget()
+
+            if isinstance(item, CustomLineEdit):
+                if f"Rec:- {item.index}" == rect:
+                    line_edit = item
+                    line_edit.focusInEvent(QtGui.QFocusEvent(QtGui.QKeyEvent.FocusIn))
+                else:
+                    line_edit = item
+                    line_edit.focusOutEvent(QtGui.QFocusEvent(QtGui.QKeyEvent.FocusOut))
+            else:
+                line_edit = item
+                line_edit.focusOutEvent(QtGui.QFocusEvent(QtGui.QKeyEvent.FocusOut))  
         super(GraphicsScene, self).mousePressEvent(event)
         self.update()
 
@@ -72,20 +95,6 @@ class GraphicsScene(QtWidgets.QGraphicsScene):
                         'height': item.rect().height()
                     }
                     self.coordinates_data[self.image][i] = data
-        # self.update()
 
-    def highlight_item(self, painter: QPainter):
-        ind = self.label_c.currentItem().text()
-        for item in self.items():
-            if isinstance(item, GraphicsRectItem):
-                rect = item.mapToScene(item.rect().topLeft())
-                if ind == f"Rec:- {rect.x(),rect.y()}":
-                    brush = QColor("green")
-                    # print(ind)
-                else:
-                    brush = QColor("green")
-                    # print(ind)
-                item.setBrush(brush)
-        # self.update()
 
     

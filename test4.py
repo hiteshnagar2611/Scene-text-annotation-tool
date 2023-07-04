@@ -16,7 +16,6 @@ from datetime import datetime
 class MainWindow(QWidget):
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
-        
         self.current_image_index = 0
         self.selected_index = 0
         self.image_paths = []
@@ -74,7 +73,7 @@ class MainWindow(QWidget):
         vbox2 = QVBoxLayout()
         
 
-        self.scene = GraphicsScene('',self.label_coordinates,self.coordinates_data,self)
+        self.scene = GraphicsScene('',self.label_coordinates,self.coordinates_data,self.scroll_layout,self)
         # self.scene.rectangleUpdated.connect(self.updateLabelCoordinates)
         # self.label_coordinates.clicked.connect(self.scene.highlight_item)
 
@@ -141,7 +140,7 @@ class MainWindow(QWidget):
                         item.moveBy(data['x'], data['y'])
                         item.setRotation(data['rotation'])
                         self.scene.addItem(item)
-                        t = CustomLineEdit(f"{data['x'],data['y']}")
+                        t = CustomLineEdit(f"{data['x'],data['y']}",self.scene,self.scroll_layout)
                         self.text_data[image_path][t.index] = t
                         t.setText(data['text'])
                         t.setCursorPosition(0)
@@ -504,5 +503,55 @@ if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     app.setAttribute(Qt.AA_Use96Dpi, True)
     w = MainWindow()
+    w.setStyleSheet("""
+    /* General styles */
+    QPushButton {
+        background-color: #3498db;
+        color: white;
+        font-size: 16px;
+        padding: 8px;
+        border-radius: 5px;
+    }
+    
+    QSlider {
+        background-color: #dcdde1;
+        height: 20px;
+        border-radius: 6px;
+    }
+    
+    QGraphicsView {
+        background-color: #f5f6fa;
+        border: 1px solid #dcdde1;
+    }
+
+    QListWidget {
+        background-color: #f5f6fa;
+        border: 1px solid #dcdde1;
+        font-size: 14px;
+        padding: 5px;
+        border-radius: 5px;
+    }
+    
+    QScrollArea {
+        background-color: #f5f6fa;
+        border: 1px solid #dcdde1;
+    }
+    
+    CustomLineEdit {
+        background-color: #dcdde1;
+        border-radius: 5px;
+        padding: 5px;
+        font-size: 14px;
+    }
+    
+    /* Button-specific styles */
+    QPushButton:hover {
+        background-color: #2980b9;
+    }
+    
+    QPushButton:pressed {
+        background-color: #21618c;
+    }
+""")
     w.run()
     sys.exit(app.exec_())
