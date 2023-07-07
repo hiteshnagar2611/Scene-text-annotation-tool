@@ -89,7 +89,7 @@ class MainWindow(QWidget):
  
 
         #self.button_delete = QPushButton("Delete")  
-        self.button_save_crop = QPushButton("Save Crop")
+        #self.button_save_crop = QPushButton("Save Crop")
         self.button_reset = QPushButton("Reset")
         self.button_ai_modale_load = QPushButton("Modal_load")
         
@@ -117,7 +117,7 @@ class MainWindow(QWidget):
         hbox.addWidget(self.button_save)
         hbox.addWidget(self.button_delete)  
         hbox.addWidget(self.button_reset)
-        hbox.addWidget(self.button_save_crop)
+        #hbox.addWidget(self.button_save_crop)
         hbox.addWidget(self.button_ai_modale_load)
 
         vbox2 = QVBoxLayout()
@@ -143,7 +143,7 @@ class MainWindow(QWidget):
         # vbox2.addLayout(scrol_layout)
         self.setLayout(vbox2)
         self.label_coordinates.clicked.connect(self.select_rectangle)
-        self.button_save_crop.clicked.connect(self.save_image_inside_rectangle)
+        #self.button_save_crop.clicked.connect(self.save_image_inside_rectangle)
         self.button_reset.clicked.connect(self.reset_image)
         self.button_delete.clicked.connect(self.delete_rectangle)
         self.button_ai_modale_load.clicked.connect(self.call_modale)
@@ -216,6 +216,8 @@ class MainWindow(QWidget):
                     self.scrollable.setWidget(self.scroll_widget)
                 self.box.addWidget(self.scrollable)
             self.button_save.clicked.connect(self.save_coordinates_to_json)
+            self.button_save.clicked.connect(self.save_image_inside_rectangle)
+            
             self.scene.add_list()
             self.save_last_image_path()
             # self.scene.update()
