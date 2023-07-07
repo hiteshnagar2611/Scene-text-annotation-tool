@@ -151,12 +151,20 @@ class MainWindow(QWidget):
 
 
     def handleSave(self):
-        # Handle the save functionality here...
-        print("Saving data...")
+        if len(self.scene.items()) == 0:
+            # No bounding boxes present
+            QMessageBox.warning(self, "No Bounding Box", "There are no bounding boxes to save.")
+        else:
+            # Bounding boxes are present, perform the save functionality here
+            print("Saving data...")
 
     def handleDelete(self):
-        # Handle the delete functionality here...
-        print("Deleting data...")
+        if len(self.scene.items()) == 0:
+            # No bounding boxes present
+            QMessageBox.warning(self, "No Bounding Box", "There are no bounding boxes to delete.")
+        else:
+            # Bounding boxes are present, perform the delete functionality here
+            print("Deleting data...")
         
     def load_images_from_folder(self, folder):
         self.image_paths = []
