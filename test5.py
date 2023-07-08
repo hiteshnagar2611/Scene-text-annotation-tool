@@ -137,6 +137,12 @@ class MainWindow(QWidget):
         # self.view.setBackgroundBrush(QImage('D:\Intern Project\SamplePhoto_1.jpg'))
         self.box.addWidget(self.view)
     
+        self.scrollable.setWidget(self.scroll_widget)
+        self.scrollable.setFixedWidth(250)
+        self.box.addWidget(self.scrollable)
+        
+        
+        
         vbox2.addLayout(self.box)
         vbox2.addLayout(hbox) 
         vbox2.addWidget(self.slider)  
@@ -621,5 +627,7 @@ if __name__ == '__main__':
         background-color: #21618c;
     }
 """)
+    w.setWindowFlag(Qt.MSWindowsFixedSizeDialogHint)
+    w.setWindowFlags(w.windowFlags() & ~Qt.WindowMaximizeButtonHint)
     w.run()
     sys.exit(app.exec_())
