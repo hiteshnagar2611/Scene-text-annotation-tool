@@ -405,7 +405,7 @@ class MainWindow(QWidget):
                 cropped_image = rotated_image.crop((new_left, new_top, new_left + width, new_top + height))
 
                 # Save the cropped image with a unique name
-                data = f"{left}_{top}_{width}_{height}_angle{angle}"
+                data = f"{left}_{top}_{width}_{height}"
                 image_file = os.path.join(image_folder, f"{image_name}_rectangle_{data}.png")
                 cropped_image.save(image_file)
 
@@ -571,8 +571,8 @@ class MainWindow(QWidget):
     def rotate_selected_item(self):
         rotation_angle = self.slider.value()
         for item in self.scene.items():
-            if isinstance(item, QGraphicsRectItem) and item.isSelected():
-                item.setRotation(rotation_angle)
+            if isinstance(item, GraphicsRectItem) and item.isSelected():
+                item.rotate(rotation_angle)
                 break
         self.update()
 
