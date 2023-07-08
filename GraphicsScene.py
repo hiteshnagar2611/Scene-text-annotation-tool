@@ -23,7 +23,7 @@ class GraphicsScene(QtWidgets.QGraphicsScene):
         self.coordinates_data = coor_data
         self.scroll_layout = scroll_layout
 
-    def mousePressEvent(self, event):
+    def mouseDoubleClickEvent(self, event):
         if self.itemAt(event.scenePos(), QtGui.QTransform()) is None:
             self._current_rect_item = GraphicsRectItem()
             self._current_rect_item.setBrush(QtCore.Qt.red)
@@ -35,7 +35,7 @@ class GraphicsScene(QtWidgets.QGraphicsScene):
             # self.index += 1
             # self._current_rect_item.index = (self._start)
          
-        super(GraphicsScene, self).mousePressEvent(event)
+        super(GraphicsScene, self).mouseDoubleClickEvent(event)
         self.update()
 
     def mouseMoveEvent(self, event):
@@ -52,7 +52,7 @@ class GraphicsScene(QtWidgets.QGraphicsScene):
         self.add_list()
         self.update()
 
-    def mouseDoubleClickEvent(self, event):
+    def mousePressEvent(self, event):
 
         rect = None
         for item in self.selectedItems():
@@ -72,7 +72,7 @@ class GraphicsScene(QtWidgets.QGraphicsScene):
                     line_edit = item
                     line_edit.focusOutEvent(QtGui.QFocusEvent(QtGui.QKeyEvent.FocusOut))
 
-        return super().mouseDoubleClickEvent(event)
+        return super().mousePressEvent(event)
 
     def drawBackground(self, painter: QPainter, rect: 'QRectF'):
         # Call the base implementation to draw the default background
