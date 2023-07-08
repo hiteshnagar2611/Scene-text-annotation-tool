@@ -286,3 +286,4 @@ class GraphicsRectItem(QGraphicsRectItem):
             if self.handleSelected is None or handle == self.handleSelected:
                 painter.drawRect(rect)
         painter.restore()
+        self.updateHandlesPos()
