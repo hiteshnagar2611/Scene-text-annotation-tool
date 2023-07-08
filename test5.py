@@ -11,6 +11,8 @@ from GraphicsScene import GraphicsScene
 from GraphicsRectItem import GraphicsRectItem
 from CustomLineEdit import CustomLineEdit
 import shutil
+import math
+from PIL import Image
 from datetime import datetime
 
 
@@ -379,26 +381,34 @@ class MainWindow(QWidget):
             image_name = os.path.splitext(os.path.basename(image_path))[0]
             image_folder = os.path.join(os.path.dirname(image_path), "image", image_name)
             os.makedirs(image_folder, exist_ok=True)
-            
-            d = self.coordinates_data[image_path]
-            original_image = QImage(image_path)
-            for i in d:
 
-                # Calculate the rectangle's dimensions
+            d = self.coordinates_data[image_path]
+            original_image = Image.open(image_path)
+            for i in d:
+                # Retrieve rectangle information
                 left = d[i]['x']
                 top = d[i]['y']
                 width = d[i]['width']
                 height = d[i]['height']
+                angle = d[i]['rotation']  # Angle of rotation in degrees
 
-                # # Create a cropped image of the rectangle area
-                cropped_image = original_image.copy(int(left), int(top), int(width), int(height))
+                # Rotate the image
+                rotated_image = original_image.rotate(angle, resample=Image.BICUBIC, expand=True)
 
-    
-                # # Save the cropped image with a unique name
-                data = f"{left}_{top}_{width}_{height}"
+                # Calculate the coordinates of the rotated rectangle
+                cos_angle = math.cos(math.radians(angle))
+                sin_angle = math.sin(math.radians(angle))
+                new_left = left * cos_angle - top * sin_angle
+                new_top = left * sin_angle + top * cos_angle
+
+                # Create a cropped image of the rotated rectangle area
+                cropped_image = rotated_image.crop((new_left, new_top, new_left + width, new_top + height))
+
+                # Save the cropped image with a unique name
+                data = f"{left}_{top}_{width}_{height}_angle{angle}"
                 image_file = os.path.join(image_folder, f"{image_name}_rectangle_{data}.png")
                 cropped_image.save(image_file)
-    
+
                 print(f"Cropped image saved: {image_file}")
 
     def delete_rectangle(self):
