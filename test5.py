@@ -11,8 +11,6 @@ from GraphicsScene import GraphicsScene
 from GraphicsRectItem import GraphicsRectItem
 from CustomLineEdit import CustomLineEdit
 import shutil
-import math
-from PIL import Image
 from datetime import datetime
 
 
@@ -70,6 +68,7 @@ class MainWindow(QWidget):
         self.num_rec = 0
         self.text_data = {}
         self.message_box = QMessageBox()
+        self.image_path = ""
 
         self.button_prev = QPushButton("Previous")
         self.button_prev.clicked.connect(self.button_click_prev)
@@ -82,6 +81,7 @@ class MainWindow(QWidget):
         self.button_save = AnimatedButton1("Save")
         # Connect the save button to a slot if needed
         self.button_save.clicked.connect(self.handleSave)
+        #self.button_save.clicked.connect(self.save_image_inside_rectangle)
     
  
 
@@ -165,6 +165,10 @@ class MainWindow(QWidget):
         else:
             # Bounding boxes are present, perform the save functionality here
             print("Saving data...")
+            image_path = self.image_paths[self.current_image_index]
+            self.save_coordinates_to_json()
+            self.save_image_inside_rectangle(image_path)
+            
 
     def handleDelete(self):
         if len(self.scene.items()) == 0:
@@ -224,8 +228,9 @@ class MainWindow(QWidget):
                     self.scrollable.setWidget(self.scroll_widget)
                 self.box.addWidget(self.scrollable)
             self.button_save.clicked.connect(self.save_coordinates_to_json)
-            self.button_save.clicked.connect(self.save_image_inside_rectangle)
+            #self.button_save.clicked.connect(self.save_image_inside_rectangle)
             
+            #self.image_path = image_path
             self.scene.add_list()
             self.save_last_image_path()
             # self.scene.update()
@@ -294,6 +299,7 @@ class MainWindow(QWidget):
                         json.dump(save, f, indent=4)
 
                     # print(f"saved at {json_file}")
+            
             self.load_image()
             self.scene.update()
 
@@ -372,43 +378,35 @@ class MainWindow(QWidget):
                     # self.scene.update()
                     break
 
-    def save_image_inside_rectangle(self):
-        if not self.coordinates_data:
-            print("No coordinates to save.")
-            return
+    def save_image_inside_rectangle(self, image_path):
+            if not self.coordinates_data:
+                print("No coordinates to save.")
+                return
 
-        for image_path in self.coordinates_data:
+        #for image_path in self.coordinates_data:
             image_name = os.path.splitext(os.path.basename(image_path))[0]
             image_folder = os.path.join(os.path.dirname(image_path), "image", image_name)
             os.makedirs(image_folder, exist_ok=True)
-
+            
             d = self.coordinates_data[image_path]
-            original_image = Image.open(image_path)
+            original_image = QImage(image_path)
             for i in d:
-                # Retrieve rectangle information
+
+                # Calculate the rectangle's dimensions
                 left = d[i]['x']
                 top = d[i]['y']
                 width = d[i]['width']
                 height = d[i]['height']
-                angle = d[i]['rotation']  # Angle of rotation in degrees
 
-                # Rotate the image
-                rotated_image = original_image.rotate(angle, resample=Image.BICUBIC, expand=True)
+                # # Create a cropped image of the rectangle area
+                cropped_image = original_image.copy(int(left), int(top), int(width), int(height))
 
-                # Calculate the coordinates of the rotated rectangle
-                cos_angle = math.cos(math.radians(angle))
-                sin_angle = math.sin(math.radians(angle))
-                new_left = left * cos_angle - top * sin_angle
-                new_top = left * sin_angle + top * cos_angle
-
-                # Create a cropped image of the rotated rectangle area
-                cropped_image = rotated_image.crop((new_left, new_top, new_left + width, new_top + height))
-
-                # Save the cropped image with a unique name
+    
+                # # Save the cropped image with a unique name
                 data = f"{left}_{top}_{width}_{height}"
                 image_file = os.path.join(image_folder, f"{image_name}_rectangle_{data}.png")
                 cropped_image.save(image_file)
-
+    
                 print(f"Cropped image saved: {image_file}")
 
     def delete_rectangle(self):
@@ -571,8 +569,8 @@ class MainWindow(QWidget):
     def rotate_selected_item(self):
         rotation_angle = self.slider.value()
         for item in self.scene.items():
-            if isinstance(item, GraphicsRectItem) and item.isSelected():
-                item.rotate(rotation_angle)
+            if isinstance(item, QGraphicsRectItem) and item.isSelected():
+                item.setRotation(rotation_angle)
                 break
         self.update()
 
