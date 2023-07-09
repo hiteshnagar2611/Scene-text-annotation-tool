@@ -388,6 +388,14 @@ class MainWindow(QWidget):
             image_folder = os.path.join(os.path.dirname(image_path), "image", image_name)
             os.makedirs(image_folder, exist_ok=True)
             
+
+            existing_files = os.listdir(image_folder)
+            for file_name in existing_files:
+                if file_name.endswith(".png"):
+                    file_path = os.path.join(image_folder, file_name)
+                    os.remove(file_path)
+
+
             d = self.coordinates_data[image_path]
             original_image = QImage(image_path)
             for i in d:
