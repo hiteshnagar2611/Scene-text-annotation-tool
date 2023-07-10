@@ -459,10 +459,10 @@ class MainWindow(QWidget):
                 if os.path.exists(json_file):
                     os.remove(json_file)
                     print(f"JSON file removed successfully: {json_file}")
-                    text_file = os.path.splitext(json_file)[0] + ".txt"
-                    with open(text_file, "w") as file:
-                        file.write("This file is deleted")
-                        print(f"Text file created: {text_file}")
+                    #text_file = os.path.splitext(json_file)[0] + ".txt"
+                    #with open(text_file, "w") as file:
+                        #file.write("This file is deleted")
+                        #print(f"Text file created: {text_file}")
                 else:
                     print(f"JSON file does not exist: {json_file}")
 
@@ -472,10 +472,10 @@ class MainWindow(QWidget):
                 if os.path.exists(image_file):
                     os.remove(image_file)
                     print(f"Image file removed successfully: {image_file}")
-                    text_file = os.path.splitext(image_file)[0] + ".txt"
-                    with open(text_file, "w") as file:
-                        file.write("This file is deleted")
-                        print(f"Text file created: {text_file}")
+                    #text_file = os.path.splitext(image_file)[0] + ".txt"
+                    #with open(text_file, "w") as file:
+                        #file.write("This file is deleted")
+                        #print(f"Text file created: {text_file}")
                 else:
                     print(f"Image file does not exist: {image_file}")
 
