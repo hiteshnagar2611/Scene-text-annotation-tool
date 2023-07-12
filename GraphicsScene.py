@@ -51,9 +51,6 @@ class GraphicsScene(QtWidgets.QGraphicsScene):
         super(GraphicsScene, self).mouseReleaseEvent(event)
         self.add_list()
         self.update()
-
-    def mousePressEvent(self, event):
-
         rect = None
         for item in self.selectedItems():
             if isinstance(item, QGraphicsRectItem) and item.isSelected():
@@ -71,6 +68,8 @@ class GraphicsScene(QtWidgets.QGraphicsScene):
                 else:
                     line_edit = item
                     line_edit.focusOutEvent(QtGui.QFocusEvent(QtGui.QKeyEvent.FocusOut))
+
+    def mousePressEvent(self, event):
 
         return super().mousePressEvent(event)
 

@@ -32,6 +32,11 @@ class CustomLineEdit(QLineEdit):
 
 
     def focusInEvent(self, event):
+        for i in range(self.scroll_layout.count()):
+            item = self.scroll_layout.itemAt(i).widget()
+            if isinstance(item, CustomLineEdit):
+                    line_edit = item
+                    line_edit.focusOutEvent(QtGui.QFocusEvent(QtGui.QKeyEvent.FocusOut))
         super().focusInEvent(event)
         self.setStyleSheet("background-color: yellow")
     
