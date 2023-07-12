@@ -418,70 +418,58 @@ class MainWindow(QWidget):
                 print(f"Cropped image saved: {image_file}")
 
     def delete_rectangle(self):
-        # if self.selected_index == -1:
-        #     self.message_box.setIcon(QMessageBox.Information)
-        #     self.message_box.setText("Please select a rectangle")
-        #     self.message_box.setWindowTitle("Information")
-        #     self.message_box.exec_()
-        #     return
-        
-        pattern = ""
-        data = ""
-        image_path = self.image_paths[self.current_image_index]
-        # print(self.coordinates_data)
-        if image_path in self.coordinates_data:
-            # if self.label_coordinates.currentItem().text() is not None:
-                # id = self.label_coordinates.currentItem().text()
+        if len(self.scene.items()) == 0:
+            # No bounding boxes present
+            QMessageBox.warning(self, "No Bounding Box", "There are no bounding boxes to delete.")
+        else:
+            # Bounding boxes are present
+            selected_item = None
             for item in self.scene.items():
-                if isinstance(item,GraphicsRectItem) and item.isSelected():
-                    rect = item.mapToScene(item.rect().topLeft())
-                    data = f"Rec:- {rect.x(),rect.y()}"
-                    pattern = f"{rect.x()}_{rect.y()}_{item.rect().width()}_{item.rect().height()}"
-                    self.scene.removeItem(item)
+                if isinstance(item, GraphicsRectItem) and item.isSelected():
+                    selected_item = item
                     break
-            d = self.coordinates_data[image_path]
-            print(self.text_data)
-            for key in d:
-                if data == f"Rec:- {d[key]['x'],d[key]['y']}":
-                    del self.text_data[image_path][f"{d[key]['x'],d[key]['y']}"]
-                    del self.coordinates_data[image_path][key]
-                    break
-            
-            # Delete the corresponding JSON file and image file
-            image_name = os.path.splitext(os.path.basename(image_path))[0]
-            coordinates_folder = os.path.join(os.path.dirname(image_path), "coordinates", image_name)
-            image_folder = os.path.join(os.path.dirname(image_path), "image", image_name)
-            json_file_pattern = os.path.join(coordinates_folder, f"{image_name}_rectangle_{pattern}_coordinate.json")
-            image_file_pattern = os.path.join(image_folder, f"{image_name}_rectangle_{pattern}.png")
-            # Delete JSON files
-            json_files = glob.glob(json_file_pattern)
-            for json_file in json_files:
-                if os.path.exists(json_file):
-                    os.remove(json_file)
-                    print(f"JSON file removed successfully: {json_file}")
-                    #text_file = os.path.splitext(json_file)[0] + ".txt"
-                    #with open(text_file, "w") as file:
-                        #file.write("This file is deleted")
-                        #print(f"Text file created: {text_file}")
-                else:
-                    print(f"JSON file does not exist: {json_file}")
 
-            # Delete image files
-            image_files = glob.glob(image_file_pattern)
-            for image_file in image_files:
-                if os.path.exists(image_file):
-                    os.remove(image_file)
-                    print(f"Image file removed successfully: {image_file}")
-                    #text_file = os.path.splitext(image_file)[0] + ".txt"
-                    #with open(text_file, "w") as file:
-                        #file.write("This file is deleted")
-                        #print(f"Text file created: {text_file}")
-                else:
-                    print(f"Image file does not exist: {image_file}")
+            if selected_item:
+                rect = selected_item.mapToScene(selected_item.rect().topLeft())
+                data = f"Rec:- {rect.x(), rect.y()}"
+                pattern = f"{rect.x()}_{rect.y()}_{selected_item.rect().width()}_{selected_item.rect().height()}"
+                self.scene.removeItem(selected_item)
 
-            print("Item removed successfully.")
-            self.load_image()
-    
+                image_path = self.image_paths[self.current_image_index]
+                if image_path in self.coordinates_data:
+                    d = self.coordinates_data[image_path]
+                    for key, value in list(d.items()):
+                        if f"Rec:- {value['x'], value['y']}" == data:
+                            del self.text_data[image_path][f"{value['x'], value['y']}"]
+                            del self.coordinates_data[image_path][key]
+
+                # Delete the corresponding JSON file and image file
+                image_name = os.path.splitext(os.path.basename(image_path))[0]
+                coordinates_folder = os.path.join(os.path.dirname(image_path), "coordinates", image_name)
+                image_folder = os.path.join(os.path.dirname(image_path), "image", image_name)
+                json_file_pattern = os.path.join(coordinates_folder, f"{image_name}_rectangle_{pattern}_coordinate.json")
+                image_file_pattern = os.path.join(image_folder, f"{image_name}_rectangle_{pattern}.png")
+
+                # Delete JSON files
+                json_files = glob.glob(json_file_pattern)
+                for json_file in json_files:
+                    if os.path.exists(json_file):
+                        os.remove(json_file)
+                        print(f"JSON file removed successfully: {json_file}")
+
+                # Delete image files
+                image_files = glob.glob(image_file_pattern)
+                for image_file in image_files:
+                    if os.path.exists(image_file):
+                        os.remove(image_file)
+                        print(f"Image file removed successfully: {image_file}")
+
+                print("Item removed successfully.")
+                self.load_image()
+            else:
+                # No selected item
+                QMessageBox.warning(self, "No Selection", "Please select a bounding box to delete.")
+        
         self.selected_index = -1
 
     
