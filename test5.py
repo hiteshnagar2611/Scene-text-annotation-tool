@@ -362,11 +362,11 @@ class MainWindow(QWidget):
                     elif reply == QMessageBox.Cancel:
                         return  # Cancel the action, do not move to the next image
 
-            self.current_image_index += 1  # Move to the next image
-            if self.current_image_index >= len(self.image_paths):
-                self.current_image_index = 0
-            self.load_image()
-            self.update()
+        self.current_image_index += 1  # Move to the next image
+        if self.current_image_index >= len(self.image_paths):
+            self.current_image_index = 0
+        self.load_image()
+        self.update()
     
     def load_coordinates_from_json(self):
         self.coordinates_data = {}
