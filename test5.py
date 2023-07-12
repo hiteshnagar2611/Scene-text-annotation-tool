@@ -160,14 +160,34 @@ class MainWindow(QWidget):
 
     def handleSave(self):
         if len(self.scene.items()) == 0:
-            # No bounding boxes present
-            QMessageBox.warning(self, "No Bounding Box", "There are no bounding boxes to save.")
+            # No new bounding boxes
+            if self.hasExistingRectangles():
+                QMessageBox.warning(self, "No New Rectangles", "There are no new rectangles to save.")
+            else:
+                QMessageBox.warning(self, "No Rectangles", "There are no rectangles to save.")
         else:
-            # Bounding boxes are present, perform the save functionality here
-            print("Saving data...")
+            # New bounding boxes are present, perform the save functionality here
             image_path = self.image_paths[self.current_image_index]
-            self.save_coordinates_to_json()
-            self.save_image_inside_rectangle(image_path)
+            if self.hasNewRectangles():
+                print("Saving data...")
+                self.save_coordinates_to_json()
+                self.save_image_inside_rectangle(image_path)
+            else:
+                QMessageBox.warning(self, "No New Rectangles", "There are no new rectangles to save.")
+    
+    def hasExistingRectangles(self):
+        image_path = self.image_paths[self.current_image_index]
+        if image_path in self.coordinates_data:
+            return len(self.coordinates_data[image_path]) > 0
+        return False
+    
+    def hasNewRectangles(self):
+        image_path = self.image_paths[self.current_image_index]
+        if image_path in self.coordinates_data:
+            saved_rectangles = len(self.coordinates_data[image_path])
+            new_rectangles = len([item for item in self.scene.items() if isinstance(item, GraphicsRectItem)])
+            return new_rectangles > saved_rectangles
+        return False
             
 
     def handleDelete(self):
