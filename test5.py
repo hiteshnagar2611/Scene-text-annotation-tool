@@ -304,18 +304,45 @@ class MainWindow(QWidget):
             self.scene.update()
 
     def button_click_prev(self):
-        if self.image_paths:
-            self.save_last_image_path()  # Save the last image path
-            self.current_image_index -= 1
-            if self.current_image_index < 0:
-                self.current_image_index = len(self.image_paths) - 1
-            self.load_image()
-            self.update()
+        if self.scene.items():
+            image_path = self.image_paths[self.current_image_index]
+            if image_path in self.coordinates_data:
+                saved_rectangles = len(self.coordinates_data[image_path])
+                unsaved_rectangles = len(self.scene.items())
+                if unsaved_rectangles > saved_rectangles:
+                    reply = QMessageBox.question(self, "Unsaved Changes",
+                                                 f"There are {unsaved_rectangles - saved_rectangles} unsaved rectangles on the current image.\n"
+                                                 f"Do you want to save the changes before moving to the previous image?",
+                                                 QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
+                    if reply == QMessageBox.Yes:
+                        self.handleSave()  # Save the changes
+                    elif reply == QMessageBox.Cancel:
+                        return  # Cancel the action, do not move to the previous image
 
+        self.current_image_index -= 1  # Move to the previous image
+        if self.current_image_index < 0:
+            self.current_image_index = len(self.image_paths) - 1
+        self.load_image()
+        self.update()
+
+    
     def button_click_next(self):
-        if self.image_paths:
-            self.save_last_image_path()  # Save the last image path
-            self.current_image_index += 1
+        if self.scene.items():
+            image_path = self.image_paths[self.current_image_index]
+            if image_path in self.coordinates_data:
+                saved_rectangles = len(self.coordinates_data[image_path])
+                unsaved_rectangles = len(self.scene.items())
+                if unsaved_rectangles > saved_rectangles:
+                    reply = QMessageBox.question(self, "Save Changes",
+                                                 f"There are {unsaved_rectangles - saved_rectangles} unsaved rectangles on the current image.\n"
+                                                 f"Do you want to save the changes before moving to the next image?",
+                                                 QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
+                    if reply == QMessageBox.Yes:
+                        self.handleSave()  # Save the changes
+                    elif reply == QMessageBox.Cancel:
+                        return  # Cancel the action, do not move to the next image
+
+            self.current_image_index += 1  # Move to the next image
             if self.current_image_index >= len(self.image_paths):
                 self.current_image_index = 0
             self.load_image()
