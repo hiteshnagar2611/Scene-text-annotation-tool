@@ -94,22 +94,22 @@ class GraphicsScene(QtWidgets.QGraphicsScene):
         painter.drawImage(rect, QImage(self.image))
         self.update()
 
-        def keyPressEvent(self, event):
-                if event.key() == Qt.Key_Delete:
-                    data = None
-                    for item in self.selectedItems():
-                        if isinstance(item, GraphicsRectItem):
-                            rect = item.mapToScene(item.rect().topLeft())
-                            data = f"{rect.x(), rect.y()}"
-                            found_in_layout = False
-                            for i in range(self.scroll_layout.count()):
-                                text = self.scroll_layout.itemAt(i).widget()
-                                if isinstance(text, CustomLineEdit):
-                                    if text.index == data:
-                                        found_in_layout = True
-                                        break
-                            if not found_in_layout:
-                                self.removeItem(item)
+    def keyPressEvent(self, event):
+            if event.key() == Qt.Key_Delete:
+                data = None
+                for item in self.selectedItems():
+                    if isinstance(item, GraphicsRectItem):
+                        rect = item.mapToScene(item.rect().topLeft())
+                        data = f"{rect.x(), rect.y()}"
+                        found_in_layout = False
+                        for i in range(self.scroll_layout.count()):
+                            text = self.scroll_layout.itemAt(i).widget()
+                            if isinstance(text, CustomLineEdit):
+                                if text.index == data:
+                                    found_in_layout = True
+                                    break
+                        if not found_in_layout:
+                            self.removeItem(item)
         
     def add_list(self):
         self.label_c.clear()
