@@ -23,20 +23,20 @@ class GraphicsScene(QtWidgets.QGraphicsScene):
         self.coordinates_data = coor_data
         self.scroll_layout = scroll_layout
 
-    def mouseDoubleClickEvent(self, event):
-        if self.itemAt(event.scenePos(), QtGui.QTransform()) is None:
-            self._current_rect_item = GraphicsRectItem()
-            self._current_rect_item.setBrush(QtCore.Qt.red)
-            self._current_rect_item.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, True)
-            self.addItem(self._current_rect_item)
-            self._start = event.scenePos()
-            r = QtCore.QRectF(self._start, self._start)
-            self._current_rect_item.setRect(r)
-            # self.index += 1
-            # self._current_rect_item.index = (self._start)
+    # def mouseDoubleClickEvent(self, event):
+    #     if self.itemAt(event.scenePos(), QtGui.QTransform()) is None:
+    #         self._current_rect_item = GraphicsRectItem()
+    #         self._current_rect_item.setBrush(QtCore.Qt.red)
+    #         self._current_rect_item.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, True)
+    #         self.addItem(self._current_rect_item)
+    #         self._start = event.scenePos()
+    #         r = QtCore.QRectF(self._start, self._start)
+    #         self._current_rect_item.setRect(r)
+    #         # self.index += 1
+    #         # self._current_rect_item.index = (self._start)
          
-        super(GraphicsScene, self).mouseDoubleClickEvent(event)
-        self.update()
+    #     super(GraphicsScene, self).mouseDoubleClickEvent(event)
+    #     self.update()
 
     def mouseMoveEvent(self, event):
         if self._current_rect_item is not None:
@@ -48,10 +48,13 @@ class GraphicsScene(QtWidgets.QGraphicsScene):
     def mouseReleaseEvent(self, event):
 
         self._current_rect_item = None
-        super(GraphicsScene, self).mouseReleaseEvent(event)
         self.add_list()
-        self.update()
+        for item in self.items():
+            if isinstance(item, GraphicsRectItem):
+                if item.rect().height()==0 and item.rect().width() == 0:
+                    self.removeItem(item)
         rect = None
+        self.update()
         for item in self.selectedItems():
             if isinstance(item, QGraphicsRectItem) and item.isSelected():
                 data = item.mapToScene(item.rect().topLeft())
@@ -68,11 +71,21 @@ class GraphicsScene(QtWidgets.QGraphicsScene):
                 else:
                     line_edit = item
                     line_edit.focusOutEvent(QtGui.QFocusEvent(QtGui.QKeyEvent.FocusOut))
+        super(GraphicsScene, self).mouseReleaseEvent(event)
 
     def mousePressEvent(self, event):
-
+        # if (event.button() == Qt.RightButton):
+        if self.itemAt(event.scenePos(), QtGui.QTransform()) is None:
+            self._current_rect_item = GraphicsRectItem()
+            self._current_rect_item.setBrush(QtCore.Qt.red)
+            self._current_rect_item.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, True)
+            self.addItem(self._current_rect_item)
+            self._start = event.scenePos()
+            r = QtCore.QRectF(self._start, self._start)
+            self._current_rect_item.setRect(r)
+        # else:
+        self.update()
         return super().mousePressEvent(event)
-
     def drawBackground(self, painter: QPainter, rect: 'QRectF'):
         # Call the base implementation to draw the default background
         super().drawBackground(painter, rect)
