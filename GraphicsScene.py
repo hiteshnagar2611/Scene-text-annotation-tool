@@ -7,8 +7,109 @@ from PyQt5 import QtGui
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
+from PyQt5.QtWidgets import QGraphicsSceneMouseEvent
 from GraphicsRectItem import GraphicsRectItem
 from CustomLineEdit import CustomLineEdit
+from shapely.geometry import LineString
+class Cube(QGraphicsEllipseItem):
+    def __init__(self, x, y, size=10):
+        super().__init__(x - size / 2, y - size / 2, size, size)
+        self.setBrush(QBrush(QColor(255, 0, 0)))
+        self.setFlag(QGraphicsItem.ItemIsMovable, True)
+        self.setFlag(QGraphicsItem.ItemIsSelectable, True)
+        self.setFlag(QGraphicsItem.ItemIsFocusable, True)
+
+
+class CustomPolygonItem(QGraphicsPolygonItem):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setFlags(QGraphicsPolygonItem.ItemIsSelectable | QGraphicsPolygonItem.ItemIsMovable)
+        self.setAcceptHoverEvents(True)
+        self.setZValue(100)
+        self.polygon = QPolygonF()
+
+        # Size handlers
+        self.size_handles = []
+        self.size_handle_size = 8
+        self.size_handle_pen = QPen(Qt.black)
+        self.size_handle_brush = QBrush(Qt.white)
+
+    def addPoint(self, pos):
+        self.polygon.append(pos)
+        self.setPolygon(self.polygon)
+        self.updateSizeHandles()
+
+    def hoverEnterEvent(self, event):
+        QApplication.setOverrideCursor(QCursor(Qt.PointingHandCursor))
+        super().hoverEnterEvent(event)
+
+    def hoverLeaveEvent(self, event):
+        QApplication.restoreOverrideCursor()
+        super().hoverLeaveEvent(event)
+
+    def paint(self, painter, option, widget=None):
+        # Draw the polygon
+        path = QPainterPath()
+        path.addPolygon(self.polygon)
+
+        painter.setRenderHint(QPainter.Antialiasing)
+
+        if self.isSelected():
+            painter.setBrush(QBrush(QColor(0, 255, 0, 20)))
+        else:
+            painter.setBrush(QBrush(QColor(255, 0, 0, 20)))
+        painter.setPen(QPen(QColor(0, 0, 0, 255), 1.0, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+        painter.drawPath(path)
+
+        # Draw size handles
+        for handle in self.size_handles:
+            painter.setPen(self.size_handle_pen)
+            painter.setBrush(self.size_handle_brush)
+            painter.drawEllipse(handle)
+
+    def shape(self):
+        path = QPainterPath()
+        path.addPolygon(self.polygon)
+        return path
+
+    def boundingRect(self):
+        return self.shape().boundingRect()
+
+    def updateSizeHandles(self):
+        self.prepareGeometryChange()
+        self.size_handles = []
+
+        for point in self.polygon:
+            handle = QRectF(
+                point.x() - self.size_handle_size / 2,
+                point.y() - self.size_handle_size / 2,
+                self.size_handle_size,
+                self.size_handle_size
+            )
+            self.size_handles.append(handle)
+
+    def mousePressEvent(self, event):
+        super().mousePressEvent(event)
+        if event.buttons() == Qt.LeftButton and not event.modifiers() & Qt.ControlModifier:
+            for handle in self.size_handles:
+                if handle.contains(event.pos()):
+                    self.setFlag(QGraphicsPolygonItem.ItemIsMovable, False)
+                    break
+
+    def mouseMoveEvent(self, event):
+        super().mouseMoveEvent(event)
+        if self.isSelected() and not event.modifiers() & Qt.ControlModifier:
+            for handle in self.size_handles:
+                if handle.contains(event.pos()):
+                    self.setFlag(QGraphicsPolygonItem.ItemIsMovable, False)
+                    break
+
+    def mouseReleaseEvent(self, event):
+        super().mouseReleaseEvent(event)
+        if event.button() == Qt.LeftButton:
+            self.setFlag(QGraphicsPolygonItem.ItemIsMovable, True)
+
+
 
 class GraphicsScene(QtWidgets.QGraphicsScene):
     def __init__(self, image,label_coordinates,coor_data,scroll_layout,parent = None):
@@ -17,32 +118,42 @@ class GraphicsScene(QtWidgets.QGraphicsScene):
         self._current_rect_item = None
         self.background_image = QPixmap(image)
         self.image = image
-        # self.index = 0
         self.setSceneRect(0,0,self.background_image.width(),self.background_image.height())
         self.label_c = label_coordinates
         self.coordinates_data = coor_data
         self.scroll_layout = scroll_layout
 
-    # def mouseDoubleClickEvent(self, event):
-    #     if self.itemAt(event.scenePos(), QtGui.QTransform()) is None:
-    #         self._current_rect_item = GraphicsRectItem()
-    #         self._current_rect_item.setBrush(QtCore.Qt.red)
-    #         self._current_rect_item.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, True)
-    #         self.addItem(self._current_rect_item)
-    #         self._start = event.scenePos()
-    #         r = QtCore.QRectF(self._start, self._start)
-    #         self._current_rect_item.setRect(r)
-    #         # self.index += 1
-    #         # self._current_rect_item.index = (self._start)
-         
-    #     super(GraphicsScene, self).mouseDoubleClickEvent(event)
-    #     self.update()
+        self.cubes = []
+        self.currentItem = None
+        self.polygons = []
+        self.is_painting_activated = False
+
+    def mousePressEvent(self, event):
+        if self.itemAt(event.scenePos(), QtGui.QTransform()) is None and not self.is_painting_activated:
+            self._current_rect_item = GraphicsRectItem()
+            self._current_rect_item.setBrush(QtCore.Qt.red)
+            self._current_rect_item.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, True)
+            self.addItem(self._current_rect_item)
+            self._start = event.scenePos()
+            r = QtCore.QRectF(self._start, self._start)
+            self._current_rect_item.setRect(r)
+        elif self.is_painting_activated and event.button() == Qt.LeftButton:
+            pos = event.scenePos()
+            if self.currentItem is None:
+                polygon = QPolygonF([pos])
+                self.currentItem = CustomPolygonItem()
+                self.currentItem.addPoint(pos)
+                self.addItem(self.currentItem)
+            else:
+                self.currentItem.addPoint(pos)
+
+        self.update()
+        return super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
         if self._current_rect_item is not None:
             r = QtCore.QRectF(self._start, event.scenePos()).normalized()
             self._current_rect_item.setRect(r)
-            # self._current_rect_item.index = (self._start)
         super(GraphicsScene, self).mouseMoveEvent(event)
         self.update()
     def mouseReleaseEvent(self, event):
@@ -72,20 +183,8 @@ class GraphicsScene(QtWidgets.QGraphicsScene):
                     line_edit = item
                     line_edit.focusOutEvent(QtGui.QFocusEvent(QtGui.QKeyEvent.FocusOut))
         super(GraphicsScene, self).mouseReleaseEvent(event)
-
-    def mousePressEvent(self, event):
-        # if (event.button() == Qt.RightButton):
-        if self.itemAt(event.scenePos(), QtGui.QTransform()) is None:
-            self._current_rect_item = GraphicsRectItem()
-            self._current_rect_item.setBrush(QtCore.Qt.red)
-            self._current_rect_item.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, True)
-            self.addItem(self._current_rect_item)
-            self._start = event.scenePos()
-            r = QtCore.QRectF(self._start, self._start)
-            self._current_rect_item.setRect(r)
-        # else:
-        self.update()
-        return super().mousePressEvent(event)
+    
+    
     def drawBackground(self, painter: QPainter, rect: 'QRectF'):
         # Call the base implementation to draw the default background
         super().drawBackground(painter, rect)
@@ -93,6 +192,15 @@ class GraphicsScene(QtWidgets.QGraphicsScene):
         # Draw custom background image
         painter.drawImage(rect, QImage(self.image))
         self.update()
+
+    def clearCurrentPolygon(self):
+        if self.currentItem:
+            self.removeItem(self.currentItem)
+
+    def finishCurrentPolygon(self):
+        if self.currentItem:
+            self.polygons.append(self.currentItem.polygon)
+            self.currentItem = None
 
     def keyPressEvent(self, event):
             if event.key() == Qt.Key_Delete:

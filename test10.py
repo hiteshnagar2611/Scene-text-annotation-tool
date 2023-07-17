@@ -89,10 +89,19 @@ class MainWindow(QWidget):
         self.button_delete = AnimatedButton2("Delete")
         # Connect the delete button to a slot if needed
         self.button_delete.clicked.connect(self.handleDelete)
- 
 
-        #self.button_delete = QPushButton("Delete")  
-        #self.button_save_crop = QPushButton("Save Crop")
+        self.activate_button = QPushButton("Draw Polygon")
+        self.activate_button.setCheckable(True)
+        self.activate_button.setChecked(False)
+        self.activate_button.toggled.connect(self.toggle_painting)
+
+        self.clear_button = QPushButton("Clear")
+        self.clear_button.clicked.connect(self.clear_current_polygon)
+
+        self.finish_button = QPushButton("Finish")
+        self.finish_button.clicked.connect(self.finish_current_polygon)
+
+
         self.button_reset = QPushButton("Reset")
         self.button_ai_modale_load = QPushButton("Model_load")
         
@@ -123,12 +132,16 @@ class MainWindow(QWidget):
         #hbox.addWidget(self.button_save_crop)
         hbox.addWidget(self.button_ai_modale_load)
 
+        hbox2 = QHBoxLayout()
+
+        hbox2.addWidget(self.activate_button)
+        hbox2.addWidget(self.clear_button)
+        hbox2.addWidget(self.finish_button)
+
         vbox2 = QVBoxLayout()
         
 
         self.scene = GraphicsScene('',self.label_coordinates,self.coordinates_data,self.scroll_layout,self)
-        # self.scene.rectangleUpdated.connect(self.updateLabelCoordinates)
-        # self.label_coordinates.clicked.connect(self.scene.highlight_item)
 
         self.pixmap = QPixmap()
         self.view = QGraphicsView(self.scene)
@@ -137,7 +150,6 @@ class MainWindow(QWidget):
 
         self.view.setScene(self.scene)
         self.view.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
-        # self.view.setBackgroundBrush(QImage('D:\Intern Project\SamplePhoto_1.jpg'))
         self.box.addWidget(self.view)
     
         self.scrollable.setWidget(self.scroll_widget)
@@ -148,8 +160,8 @@ class MainWindow(QWidget):
         
         vbox2.addLayout(self.box)
         vbox2.addLayout(hbox) 
+        vbox2.addLayout(hbox2)
         vbox2.addWidget(self.slider)  
-        # vbox2.addLayout(scrol_layout)
         self.setLayout(vbox2)
         self.label_coordinates.clicked.connect(self.select_rectangle)
         #self.button_save_crop.clicked.connect(self.save_image_inside_rectangle)
@@ -158,6 +170,20 @@ class MainWindow(QWidget):
         self.button_ai_modale_load.clicked.connect(self.call_modale)
 
 
+
+    def toggle_painting(self, checked):
+        self.scene.is_painting_activated = checked
+        if checked:
+            self.activate_button.setText("End Polygon")
+        else:
+            self.activate_button.setText("Draw Polygon")
+        self.scene.clearCurrentPolygon()
+
+    def clear_current_polygon(self):
+        self.scene.clearCurrentPolygon()
+
+    def finish_current_polygon(self):
+        self.scene.finishCurrentPolygon()
 
 
     def handleSave(self):
@@ -203,7 +229,7 @@ class MainWindow(QWidget):
             if saved_rectangles == 0 and new_rectangles > 0:
                 return True
             return new_rectangles > saved_rectangles
-        return False
+        return True
             
 
     def handleDelete(self):

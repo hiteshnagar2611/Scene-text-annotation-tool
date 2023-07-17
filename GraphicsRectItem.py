@@ -49,7 +49,6 @@ class GraphicsRectItem(QGraphicsRectItem):
         self.setFlag(QGraphicsItem.ItemIsFocusable, True)
         self.updateHandlesPos()
         self.setZValue(100)
-        self.data = {}
     def handleAt(self, point):
         """
         Returns the resize handle below the given point.
@@ -71,10 +70,9 @@ class GraphicsRectItem(QGraphicsRectItem):
         """
         Executed when the mouse moves over the shape (NOT PRESSED).
         """
-        if self.isSelected():
-            handle = self.handleAt(moveEvent.pos())
-            cursor = Qt.ArrowCursor if handle is None else self.handleCursors[handle]
-            self.setCursor(cursor)
+        handle = self.handleAt(moveEvent.pos())
+        cursor = Qt.PointingHandCursor if handle is None else self.handleCursors[handle]
+        self.setCursor(cursor)
         super().hoverMoveEvent(moveEvent)
 
     def hoverLeaveEvent(self, moveEvent):
