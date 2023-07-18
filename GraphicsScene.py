@@ -58,6 +58,8 @@ class CustomPolygonItem(QGraphicsPolygonItem):
             painter.setBrush(QBrush(QColor(0, 255, 0, 20)))
         else:
             painter.setBrush(QBrush(QColor(255, 0, 0, 20)))
+
+        # Draw the polygon
         painter.setPen(QPen(QColor(0, 0, 0, 255), 1.0, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
         painter.drawPath(path)
 
@@ -67,9 +69,20 @@ class CustomPolygonItem(QGraphicsPolygonItem):
             painter.setBrush(self.size_handle_brush)
             painter.drawEllipse(handle)
 
+        # Draw the connecting line if the polygon has at least two points
+        if len(self.polygon) >= 2:
+            line = QLineF(self.polygon.first(), self.polygon.last())
+            painter.setPen(QPen(QColor(0, 0, 0, 255), 1.0, Qt.SolidLine))
+            painter.drawLine(line)
+
     def shape(self):
-        path = QPainterPath()
-        path.addPolygon(self.polygon)
+        path = super().shape()
+        # Check if polygon contains at least two points
+        if len(self.polygon) >= 2:
+            # Add line segment connecting first and last points
+            line = QLineF(self.polygon.first(), self.polygon.last())
+            path.moveTo(line.p1())
+            path.lineTo(line.p2())
         return path
 
     def boundingRect(self):
