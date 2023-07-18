@@ -101,6 +101,8 @@ class MainWindow(QWidget):
         self.finish_button = QPushButton("Finish")
         self.finish_button.clicked.connect(self.finish_current_polygon)
 
+        self.ask_folder = QPushButton("Choose Folder")
+        self.ask_folder.clicked.connect(self.min_run)
 
         self.button_reset = QPushButton("Reset")
         self.button_ai_modale_load = QPushButton("Model_load")
@@ -137,7 +139,7 @@ class MainWindow(QWidget):
         hbox2.addWidget(self.activate_button)
         hbox2.addWidget(self.clear_button)
         hbox2.addWidget(self.finish_button)
-
+        hbox2.addWidget(self.ask_folder)
         vbox2 = QVBoxLayout()
         
 
@@ -601,16 +603,6 @@ class MainWindow(QWidget):
         self.repaint()
         self.call_modale()
 
-    def run(self):
-        folder_path = askdirectory(title="Select Folder ai folder")
-        with open("folder_path.txt", "w") as file:
-            file.write(folder_path)
-        if not folder_path:
-            sys.exit()
-        self.load_images_from_folder(folder_path)
-        self.load_coordinates_from_json()
-        self.load_image()
-        self.show()
 
 
     def call_modale(self):
@@ -659,7 +651,83 @@ class MainWindow(QWidget):
                 break
         self.update()
 
-        
+    def run(self):
+        try:
+            splash_pix = QPixmap("Scene-text-annotation-tool - Copy\sample.png") 
+            max_splash_size = QtCore.QSize(300, 300)
+            splash_pix = splash_pix.scaled(max_splash_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            splash = QSplashScreen(splash_pix, Qt.WindowStaysOnTopHint)
+            desktop = QtWidgets.QApplication.desktop()
+            screen_rect = desktop.availableGeometry(desktop.primaryScreen())
+            splash.move(screen_rect.center() - splash.rect().center())
+            splash.setFixedSize(splash_pix.size())
+            splash.setMask(splash_pix.mask())
+        except Exception as e:
+            print("Error loading image:", e) 
+        splash.showMessage("Loading...", Qt.AlignBottom | Qt.AlignCenter, QtGui.QColor(Qt.black))
+        splash.show()
+        app.processEvents()
+
+        # Check if folder_path.txt exists and read the folder path from it
+        if os.path.exists("folder_path.txt"):
+            with open("folder_path.txt", "r") as file:
+                folder_path = file.read().strip()
+        else:
+            folder_path = None
+
+        # If folder_path is empty or does not exist, prompt the user to select a folder
+        if not folder_path:
+            folder_path = QtWidgets.QFileDialog.getExistingDirectory(None, "Select Folder ai folder")
+
+        # Save the selected folder path to folder_path.txt
+        with open("folder_path.txt", "w") as file:
+            file.write(folder_path)
+
+        # If the user canceled the folder selection, exit the application
+        if not folder_path:
+            sys.exit()
+
+        timer = QElapsedTimer()
+        timer.start()
+
+        while timer.elapsed() < 3000:  # 3000 milliseconds = 3 seconds
+            app.processEvents()
+
+        splash.close()
+        self.load_images_from_folder(folder_path)
+        self.load_coordinates_from_json()
+        self.load_image()
+        self.show()
+    def min_run(self):
+        folder_path = askdirectory(title="Select Folder ai folder")
+        try:
+            splash_pix = QPixmap("https://www.google.com/url?sa=i&url=https%3A%2F%2Fgithub.com%2Ftopics%2Fscreen-annotation&psig=AOvVaw0K5r_ors996VBjGeYkQjFX&ust=1689769272621000&source=images&cd=vfe&opi=89978449&ved=0CBEQjRxqFwoTCPD6u5-fmIADFQAAAAAdAAAAABAD") 
+            max_splash_size = QtCore.QSize(300, 300)
+            splash_pix = splash_pix.scaled(max_splash_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            splash = QSplashScreen(splash_pix, Qt.WindowStaysOnTopHint)
+            desktop = QtWidgets.QApplication.desktop()
+            screen_rect = desktop.availableGeometry(desktop.primaryScreen())
+            splash.move(screen_rect.center() - splash.rect().center())
+            splash.setFixedSize(splash_pix.size())
+            splash.setMask(splash_pix.mask())
+        except Exception as e:
+            print("Error loading image:", e) 
+        splash.showMessage("Loading...", Qt.AlignBottom | Qt.AlignCenter, QtGui.QColor(Qt.black))
+        splash.show()
+        app.processEvents()
+        timer = QElapsedTimer()
+        timer.start()
+
+        while timer.elapsed() < 3000:  # 3000 milliseconds = 3 seconds
+            app.processEvents()
+        with open("folder_path.txt", "w") as file:
+            file.write(folder_path)
+        if not folder_path:
+            sys.exit()
+        self.load_images_from_folder(folder_path)
+        self.load_coordinates_from_json()
+        self.load_image()
+        self.show()
 def message_handler(mode, context, message):
     pass  
 qInstallMessageHandler(message_handler)
@@ -670,6 +738,8 @@ if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     app.setAttribute(Qt.AA_Use96Dpi, True)
     w = MainWindow()
+    w.setWindowFlag(Qt.MSWindowsFixedSizeDialogHint)
+    w.setWindowFlags(w.windowFlags() & ~Qt.WindowMaximizeButtonHint)
     w.setStyleSheet("""
     /* General styles */
     QPushButton {
@@ -720,7 +790,5 @@ if __name__ == '__main__':
         background-color: #21618c;
     }
 """)
-    w.setWindowFlag(Qt.MSWindowsFixedSizeDialogHint)
-    w.setWindowFlags(w.windowFlags() & ~Qt.WindowMaximizeButtonHint)
     w.run()
     sys.exit(app.exec_())
