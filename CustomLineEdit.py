@@ -19,7 +19,6 @@ class CustomLineEdit(QLineEdit):
     def mousePressEvent(self, event):
         super().mousePressEvent(event)
         self.clicked.emit(self.index)
-        print("pressed")
         rect = None
         for item in self.scene.items():
             if isinstance(item, QGraphicsRectItem):
@@ -29,8 +28,13 @@ class CustomLineEdit(QLineEdit):
                     item.setSelected(True)
                 else:
                     item.setSelected(False)
-
-
+            if isinstance(item,QGraphicsPolygonItem):
+                coord = item.getCoordinates()
+                print(f"{coord[0]}_{coord[1]}" , self.index)
+                if f"{coord[0]}_{coord[1]}" == self.index:
+                    item.setSelected(True)
+                else:
+                    item.setSelected(False)
     def focusInEvent(self, event):
         for i in range(self.scroll_layout.count()):
             item = self.scroll_layout.itemAt(i).widget()

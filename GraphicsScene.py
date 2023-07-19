@@ -39,6 +39,10 @@ class CustomPolygonItem(QGraphicsPolygonItem):
         self.setPolygon(self.polygon)
         self.updateSizeHandles()
 
+    def setCoordinates(self,points):
+        self.polygon = QPolygonF(points)
+        self.setPolygon(self.polygon)
+
     def hoverEnterEvent(self, event):
         QApplication.setOverrideCursor(QCursor(Qt.PointingHandCursor))
         super().hoverEnterEvent(event)
@@ -88,6 +92,11 @@ class CustomPolygonItem(QGraphicsPolygonItem):
     def boundingRect(self):
         return self.shape().boundingRect()
 
+    def getCoordinates(self):
+        polygon_points = self.polygon.toPolygon()
+        coordinates = [tuple([point.x(), point.y()]) for point in polygon_points]
+        return coordinates
+    
     def updateSizeHandles(self):
         self.prepareGeometryChange()
         self.size_handles = []

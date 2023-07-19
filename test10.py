@@ -7,14 +7,13 @@ import sys
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
-from GraphicsScene import GraphicsScene
+from GraphicsScene import GraphicsScene,CustomPolygonItem
+from GraphicsScene import GraphicsScene,CustomPolygonItem
 from GraphicsRectItem import GraphicsRectItem
 from CustomLineEdit import CustomLineEdit
 import shutil
-from datetime import datetime
-import traceback
-
-
+from PIL import Image, ImageDraw
+from shapely.geometry import Polygon
 
 class AnimatedButton1(QPushButton):
     def __init__(self, parent=None):
@@ -227,7 +226,7 @@ class MainWindow(QWidget):
         image_path = self.image_paths[self.current_image_index]
         if image_path in self.coordinates_data:
             saved_rectangles = len(self.coordinates_data[image_path])
-            new_rectangles = len([item for item in self.scene.items() if isinstance(item, GraphicsRectItem)])
+            new_rectangles = len([item for item in self.scene.items() if isinstance(item, QGraphicsItem)])
             if saved_rectangles == 0 and new_rectangles > 0:
                 return True
             return new_rectangles > saved_rectangles
@@ -275,21 +274,32 @@ class MainWindow(QWidget):
                 widget = item.widget()
                 if widget:
                     widget.deleteLater()
-            # print(self.coordinates_data)
+            a = 0
             if self.coordinates_data != {}:
                 if image_path in self.coordinates_data:
                     self.text_data[image_path] = {}
-                    for i in self.coordinates_data[image_path]:
-                        data = self.coordinates_data[image_path][i]
-                        item = GraphicsRectItem(QRectF(QPointF(0,0),QSizeF(data['width'],data['height'])))
-                        item.moveBy(data['x'], data['y'])
-                        item.setRotation(data['rotation'])
-                        self.scene.addItem(item)
-                        t = CustomLineEdit(f"{data['x'],data['y']}",self.scene,self.scroll_layout)
-                        self.text_data[image_path][t.index] = t
-                        t.setText(data['text'])
-                        t.setCursorPosition(0)
-                        self.scroll_layout.addWidget(t)
+                    for key in self.coordinates_data[image_path]:
+                        data = self.coordinates_data[image_path][key]
+                        if key[0] == "[":
+                            item = CustomPolygonItem()
+                            for point in data['coordinates']:
+                                item.addPoint(QPointF(point[0],point[1]))
+                            self.scene.addItem(item)
+                            t = CustomLineEdit(f"{tuple(data['coordinates'][0])}_{tuple(data['coordinates'][1])}",self.scene,self.scroll_layout)
+                            self.text_data[image_path][t.index] = t
+                            t.setText(data['text'])
+                            t.setCursorPosition(0)
+                            self.scroll_layout.addWidget(t)
+                        else:   
+                            item = GraphicsRectItem(QRectF(QPointF(0,0),QSizeF(data['width'],data['height'])))
+                            item.moveBy(data['x'], data['y'])
+                            item.setRotation(data['rotation'])
+                            self.scene.addItem(item)
+                            t = CustomLineEdit(f"{data['x'],data['y']}",self.scene,self.scroll_layout)
+                            self.text_data[image_path][t.index] = t
+                            t.setText(data['text'])
+                            t.setCursorPosition(0)
+                            self.scroll_layout.addWidget(t)
                     self.scrollable.setWidget(self.scroll_widget)
                 self.box.addWidget(self.scrollable)
             self.button_save.clicked.connect(self.save_coordinates_to_json)
@@ -308,7 +318,7 @@ class MainWindow(QWidget):
             if image_path not in self.coordinates_data:
                 self.coordinates_data[image_path] = {}
 
-            for i, item in enumerate(self.scene.items()):
+            for item in self.scene.items():
                 if isinstance(item, GraphicsRectItem):
                     rect = item.mapToScene(item.rect().topLeft())
                     key = f"{rect.x()}_{rect.y()}_{item.rect().width()}_{item.rect().height()}"
@@ -321,7 +331,14 @@ class MainWindow(QWidget):
                         'text': f"{rect.x(), rect.y()}"
                     }
                     self.coordinates_data[image_path][key] = data
-
+                if isinstance(item,CustomPolygonItem):
+                    coord = item.getCoordinates()
+                    key = str(coord)
+                    data = {
+                        'coordinates': coord,
+                        'text': f"{coord[1]}_{coord[2]}"
+                    }
+                    self.coordinates_data[image_path][key] = data
             # Update text data for existing coordinates
             if image_path in self.text_data:
                 for key, value in self.coordinates_data[image_path].items():
@@ -552,17 +569,29 @@ class MainWindow(QWidget):
             for i in d:
 
                 # Calculate the rectangle's dimensions
-                left = d[i]['x']
-                top = d[i]['y']
-                width = d[i]['width']
-                height = d[i]['height']
+                if i[0] == "[":
+                    image = Image.open(image_path)
+                    mask = Image.new("L", image.size, 0)
+                    draw = ImageDraw.Draw(mask)
+                    polygon_points = [QPointF(point[0], point[1]) for point in d[i]['coordinates']]
+                    polygon = Polygon([(point.x(), point.y()) for point in polygon_points])
+                    xy = [(int(point.x()), int(point.y())) for point in polygon_points]
+                    draw.polygon(xy, fill=255)
+                    cropped_image = Image.new("RGBA", image.size)
+                    cropped_image.paste(image, mask=mask)
+                    data = f"{d[i]['coordinates']}"
+                else:
+                    left = d[i]['x']
+                    top = d[i]['y']
+                    width = d[i]['width']
+                    height = d[i]['height']
 
-                # # Create a cropped image of the rectangle area
-                cropped_image = original_image.copy(int(left), int(top), int(width), int(height))
+                    # # Create a cropped image of the rectangle area
+                    cropped_image = original_image.copy(int(left), int(top), int(width), int(height))
+                    data = f"{left}_{top}_{width}_{height}"
 
     
                 # # Save the cropped image with a unique name
-                data = f"{left}_{top}_{width}_{height}"
                 image_file = os.path.join(image_folder, f"{image_name}_rectangle_{data}.png")
                 cropped_image.save(image_file)
     
