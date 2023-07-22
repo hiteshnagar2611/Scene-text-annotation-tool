@@ -173,12 +173,19 @@ class GraphicsScene(QtWidgets.QGraphicsScene):
                 data = item.mapToScene(item.rect().topLeft())
                 rect = f"Rec:- {data.x(), data.y()}"
                 break
-
+            elif isinstance(item,CustomPolygonItem) and item.isSelected():
+                cor = item.getCoordinates()
+                key = f"{cor[0]}_{cor[1]}"
+                rect = key
+                break
         for i in range(self.scroll_layout.count()):
             item = self.scroll_layout.itemAt(i).widget()
 
             if isinstance(item, CustomLineEdit):
                 if f"Rec:- {item.index}" == rect:
+                    line_edit = item
+                    line_edit.focusInEvent(QtGui.QFocusEvent(QtGui.QKeyEvent.FocusIn))
+                elif f"{item.index}" == rect:
                     line_edit = item
                     line_edit.focusInEvent(QtGui.QFocusEvent(QtGui.QKeyEvent.FocusIn))
                 else:
