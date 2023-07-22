@@ -112,7 +112,7 @@ class MainWindow(QWidget):
         self.slider.setValue(0)
         self.slider.setTickInterval(5)
         self.slider.setTickPosition(QSlider.TicksBelow)
-        self.slider.valueChanged.connect(self.rotate_selected_item)
+        self.slider.valueChanged.connect(self.rotate_selected_item_r)
 
 
         self.label_coordinates = QListWidget()
@@ -220,7 +220,7 @@ class MainWindow(QWidget):
         image_path = self.image_paths[self.current_image_index]
         if image_path in self.coordinates_data:
             return len(self.coordinates_data[image_path]) > 0
-        return False
+        return True
 
     def hasNewRectangles(self):
         image_path = self.image_paths[self.current_image_index]
@@ -268,19 +268,20 @@ class MainWindow(QWidget):
             for item in self.scene.items():
                 if isinstance(item, GraphicsRectItem):
                     self.scene.removeItem(item)
+                elif isinstance(item,CustomPolygonItem):
+                    self.scene.removeItem(item)
             
             while self.scroll_layout.count():
                 item = self.scroll_layout.takeAt(0)
                 widget = item.widget()
                 if widget:
                     widget.deleteLater()
-            a = 0
             if self.coordinates_data != {}:
                 if image_path in self.coordinates_data:
                     self.text_data[image_path] = {}
                     for key in self.coordinates_data[image_path]:
                         data = self.coordinates_data[image_path][key]
-                        if key[0] == "[":
+                        if key[0] == "[" and key[-1] == "]":
                             item = CustomPolygonItem()
                             for point in data['coordinates']:
                                 item.addPoint(QPointF(point[0],point[1]))
@@ -331,7 +332,7 @@ class MainWindow(QWidget):
                         'text': f"{rect.x(), rect.y()}"
                     }
                     self.coordinates_data[image_path][key] = data
-                if isinstance(item,CustomPolygonItem):
+                elif isinstance(item,CustomPolygonItem):
                     coord = item.getCoordinates()
                     key = str(coord)
                     data = {
@@ -375,17 +376,21 @@ class MainWindow(QWidget):
             close_timer.start(3000)
         else:
             # Bounding boxes are present
-            selected_item = None
+            selected_item_r = None
+            selected_item_p = None
             for item in self.scene.items():
                 if isinstance(item, GraphicsRectItem) and item.isSelected():
-                    selected_item = item
+                    selected_item_r = item
+                    break
+                elif isinstance(item,CustomPolygonItem) and item.isSelected():
+                    selected_item_p = item
                     break
 
-            if selected_item:
-                rect = selected_item.mapToScene(selected_item.rect().topLeft())
+            if selected_item_r:
+                rect = selected_item_r.mapToScene(selected_item_r.rect().topLeft())
                 data = f"Rec:- {rect.x(), rect.y()}"
-                pattern = f"{rect.x()}_{rect.y()}_{selected_item.rect().width()}_{selected_item.rect().height()}"
-                self.scene.removeItem(selected_item)
+                pattern = f"{rect.x()}_{rect.y()}_{selected_item_r.rect().width()}_{selected_item_r.rect().height()}"
+                self.scene.removeItem(selected_item_r)
 
                 image_path = self.image_paths[self.current_image_index]
                 if image_path in self.coordinates_data:
@@ -413,8 +418,8 @@ class MainWindow(QWidget):
                             if (
                                 value['x'] == rect.x()
                                 and value['y'] == rect.y()
-                                and value['width'] == selected_item.rect().width()
-                                and value['height'] == selected_item.rect().height()
+                                and value['width'] == selected_item_r.rect().width()
+                                and value['height'] == selected_item_r.rect().height()
                             ):
                                 del data[key]
                                 break
@@ -432,6 +437,51 @@ class MainWindow(QWidget):
 
                 print("Item removed successfully.")
                 self.load_image()
+            elif selected_item_p:
+                image_path = self.image_paths[self.current_image_index]
+                key = str(selected_item_p.getCoordinates())
+                if key in self.coordinates_data[image_path]:
+                    temp_data = self.coordinates_data[image_path][key]
+                    del self.coordinates_data[image_path][key]
+                    image_name = os.path.splitext(os.path.basename(image_path))[0]
+                    coordinates_folder = os.path.join(os.path.dirname(image_path), "coordinates", image_name)
+                    image_folder = os.path.join(os.path.dirname(image_path), "image", image_name)
+                    json_file_pattern = os.path.join(coordinates_folder, f"{image_name}_coordinates.json")
+                    image_file_pattern = os.path.join(image_folder, f"{image_name}.png")
+                    json_files = glob.glob(json_file_pattern)
+                    for json_file in json_files:
+                        if os.path.exists(json_file):
+                            with open(json_file, 'r') as f:
+                                data = json.load(f)
+                            
+                            for temp_key, value in list(data.items()):
+                                if temp_key != key:
+                                    if ( 
+                                        value['x'] == rect.x()
+                                        and value['y'] == rect.y()
+                                        and value['width'] == selected_item_r.rect().width()
+                                        and value['height'] == selected_item_r.rect().height()
+                                    ):
+                                        del data[temp_key]
+                                        break
+                                elif (value['coordinates'] == temp_data['coordinates']):
+                                    del data[key]
+                                    break
+                            
+                            with open(json_file, 'w') as f:
+                                json.dump(data, f, indent=4)
+                                print(f"JSON file updated: {json_file}")
+
+                    # Delete image files
+                    image_files = glob.glob(image_file_pattern)
+                    for image_file in image_files:
+                        if os.path.exists(image_file):
+                            os.remove(image_file)
+                            print(f"Image file removed successfully: {image_file}")
+
+                    print("Item removed successfully.")
+                    self.load_image()
+
             else:
                 message_box = QMessageBox(self)
                 message_box.setWindowTitle("No Selection")
@@ -462,7 +512,7 @@ class MainWindow(QWidget):
                     print(f"Coordinates folder not found for image: {image_name}")
             else:
                 print(f"Coordinates folder not found for image: {image_name}")
-
+        # print(self.coordinates_data)
 
     def button_click_prev(self):
         if self.scene.items():
@@ -616,12 +666,15 @@ class MainWindow(QWidget):
                 print(f"JSON file does not exist: {json_file}")
 
             # Delete cropped image file for the current image
-            image_file = os.path.join(image_folder, f"{image_name}.png")
-            if os.path.exists(image_file):
-                os.remove(image_file)
-                print(f"Image file removed successfully: {image_file}")
+            pattern = os.path.join(image_folder, f"{image_name}_*.png")
+            files_to_remove = glob.glob(pattern)
+            
+            if files_to_remove:
+                for file_path in files_to_remove:
+                    os.remove(file_path)
+                    print(f"File removed successfully: {file_path}")
             else:
-                print(f"Image file does not exist: {image_file}")
+                print(f"No files found with the pattern: {pattern}")
 
             # Remove the current image from coordinates_data
             if image_path in self.coordinates_data:
@@ -672,7 +725,7 @@ class MainWindow(QWidget):
                 if last_image_path and last_image_path in self.image_paths:
                     self.current_image_index = self.image_paths.index(last_image_path)
 
-    def rotate_selected_item(self):
+    def rotate_selected_item_r(self):
         rotation_angle = self.slider.value()
         for item in self.scene.items():
             if isinstance(item, QGraphicsRectItem) and item.isSelected():

@@ -110,26 +110,6 @@ class CustomPolygonItem(QGraphicsPolygonItem):
             )
             self.size_handles.append(handle)
 
-    def mousePressEvent(self, event):
-        super().mousePressEvent(event)
-        if event.buttons() == Qt.LeftButton and not event.modifiers() & Qt.ControlModifier:
-            for handle in self.size_handles:
-                if handle.contains(event.pos()):
-                    self.setFlag(QGraphicsPolygonItem.ItemIsMovable, False)
-                    break
-
-    def mouseMoveEvent(self, event):
-        super().mouseMoveEvent(event)
-        if self.isSelected() and not event.modifiers() & Qt.ControlModifier:
-            for handle in self.size_handles:
-                if handle.contains(event.pos()):
-                    self.setFlag(QGraphicsPolygonItem.ItemIsMovable, False)
-                    break
-
-    def mouseReleaseEvent(self, event):
-        super().mouseReleaseEvent(event)
-        if event.button() == Qt.LeftButton:
-            self.setFlag(QGraphicsPolygonItem.ItemIsMovable, True)
 
 
 
