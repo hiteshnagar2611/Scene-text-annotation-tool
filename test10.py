@@ -316,8 +316,7 @@ class MainWindow(QWidget):
     def save_coordinates_to_json(self):
         if self.image_paths and len(self.scene.items()) != 0:
             image_path = self.image_paths[self.current_image_index]
-            if image_path not in self.coordinates_data:
-                self.coordinates_data[image_path] = {}
+            self.coordinates_data[image_path] = {}
 
             for item in self.scene.items():
                 if isinstance(item, GraphicsRectItem):
@@ -357,7 +356,7 @@ class MainWindow(QWidget):
             json_file = os.path.join(coordinates_folder, f"{image_name}_coordinates.json")
             with open(json_file, "w") as f:
                 json.dump(self.coordinates_data[image_path], f, indent=4)
-
+            print(self.coordinates_data[image_path])
             self.load_image()
             self.scene.update()
 
@@ -396,9 +395,10 @@ class MainWindow(QWidget):
                 if image_path in self.coordinates_data:
                     d = self.coordinates_data[image_path]
                     for key, value in list(d.items()):
-                        if f"Rec:- {value['x'], value['y']}" == data:
-                            del self.text_data[image_path][f"{value['x'], value['y']}"]
-                            del self.coordinates_data[image_path][key]
+                        if key[0] != "[":
+                            if f"Rec:- {value['x'], value['y']}" == data:
+                                del self.text_data[image_path][f"{value['x'], value['y']}"]
+                                del self.coordinates_data[image_path][key]
 
                 # Delete the corresponding JSON file and image file
                 image_name = os.path.splitext(os.path.basename(image_path))[0]
@@ -415,14 +415,15 @@ class MainWindow(QWidget):
                             data = json.load(f)
                         
                         for key, value in list(data.items()):
-                            if (
-                                value['x'] == rect.x()
-                                and value['y'] == rect.y()
-                                and value['width'] == selected_item_r.rect().width()
-                                and value['height'] == selected_item_r.rect().height()
-                            ):
-                                del data[key]
-                                break
+                            if key[0] != "[":
+                                if (
+                                    value['x'] == rect.x()
+                                    and value['y'] == rect.y()
+                                    and value['width'] == selected_item_r.rect().width()
+                                    and value['height'] == selected_item_r.rect().height()
+                                ):
+                                    del data[key]
+                                    break
                         
                         with open(json_file, 'w') as f:
                             json.dump(data, f, indent=4)
