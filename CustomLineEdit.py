@@ -23,7 +23,7 @@ class CustomLineEdit(QLineEdit):
         for item in self.scene.items():
             if isinstance(item, QGraphicsRectItem):
                 data = item.mapToScene(item.rect().topLeft())
-                rect = f"{data.x(), data.y()}"
+                rect = f"{data.x()}_{data.y()}_{item.rect().width()}_{item.rect().height()}"
                 if rect  == self.index:
                     item.setSelected(True)
                 else:
@@ -31,7 +31,7 @@ class CustomLineEdit(QLineEdit):
             if isinstance(item,QGraphicsPolygonItem):
                 coord = item.getCoordinates()
                 print(f"{coord[0]}_{coord[1]}" , self.index)
-                if f"{coord[0]}_{coord[1]}" == self.index:
+                if str(coord) == self.index:
                     item.setSelected(True)
                 else:
                     item.setSelected(False)
@@ -47,4 +47,3 @@ class CustomLineEdit(QLineEdit):
     def focusOutEvent(self,event):
         super().focusOutEvent(event)
         self.setStyleSheet("")
-

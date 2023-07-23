@@ -23,7 +23,7 @@ class Cube(QGraphicsEllipseItem):
 class CustomPolygonItem(QGraphicsPolygonItem):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setFlags(QGraphicsPolygonItem.ItemIsSelectable | QGraphicsPolygonItem.ItemIsMovable)
+        self.setFlags(QGraphicsPolygonItem.ItemIsSelectable)
         self.setAcceptHoverEvents(True)
         self.setZValue(100)
         self.polygon = QPolygonF()
@@ -171,18 +171,19 @@ class GraphicsScene(QtWidgets.QGraphicsScene):
         for item in self.selectedItems():
             if isinstance(item, QGraphicsRectItem) and item.isSelected():
                 data = item.mapToScene(item.rect().topLeft())
-                rect = f"Rec:- {data.x(), data.y()}"
+                rect = f"{data.x()}_{data.y()}_{item.rect().width()}_{item.rect().height()}"
                 break
             elif isinstance(item,CustomPolygonItem) and item.isSelected():
                 cor = item.getCoordinates()
-                key = f"{cor[0]}_{cor[1]}"
-                rect = key
-                break
+                if len(cor) > 2:
+                    key = str(cor)
+                    rect = key
+                    break
         for i in range(self.scroll_layout.count()):
             item = self.scroll_layout.itemAt(i).widget()
 
             if isinstance(item, CustomLineEdit):
-                if f"Rec:- {item.index}" == rect:
+                if f"{item.index}" == rect:
                     line_edit = item
                     line_edit.focusInEvent(QtGui.QFocusEvent(QtGui.QKeyEvent.FocusIn))
                 elif f"{item.index}" == rect:
@@ -217,7 +218,7 @@ class GraphicsScene(QtWidgets.QGraphicsScene):
                 for item in self.selectedItems():
                     if isinstance(item, GraphicsRectItem):
                         rect = item.mapToScene(item.rect().topLeft())
-                        data = f"{rect.x(), rect.y()}"
+                        data = f"{rect.x()}_{rect.y()}_{item.rect().width()}_{item.rect().height()}"
                         found_in_layout = False
                         for i in range(self.scroll_layout.count()):
                             text = self.scroll_layout.itemAt(i).widget()

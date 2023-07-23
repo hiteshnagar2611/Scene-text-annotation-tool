@@ -23,6 +23,10 @@ class AnimatedButton1(QPushButton):
         self.animationDuration = 2000  # Duration in milliseconds
         self.clicked.connect(self.animateSave)
 
+        # Move the connections to the __init__ method
+        # self.clicked.connect(self.save_coordinates_to_json)
+        # self.clicked.connect(self.save_image_inside_rectangle)
+
     def animateSave(self):
         self.setText(self.savedText)
         self.setStyleSheet("background-color: green")
@@ -80,8 +84,8 @@ class MainWindow(QWidget):
         #self.button_save = QPushButton("Save")
         self.button_save = AnimatedButton1("Save")
         # Connect the save button to a slot if needed
-        self.button_save.clicked.connect(self.handleSave)
-        #self.button_save.clicked.connect(self.save_image_inside_rectangle)
+        self.button_save.clicked.connect(self.save_coordinates_to_json)
+        self.button_save.clicked.connect(self.save_image_inside_rectangle)
     
  
 
@@ -187,22 +191,22 @@ class MainWindow(QWidget):
         self.scene.finishCurrentPolygon()
 
 
-    def handleSave(self):
-        if len(self.scene.items()) == 0:
-            # No new bounding boxes
-            if self.hasExistingRectangles():
-                self.showMessageBox("No New Rectangles", "There are no new rectangles to save.")
-            else:
-                self.showMessageBox("No Rectangles", "There are no rectangles to save.")
-        else:
-            # New bounding boxes are present, perform the save functionality here
-            image_path = self.image_paths[self.current_image_index]
-            if self.hasNewRectangles():
-                print("Saving data...")
-                self.save_coordinates_to_json()
-                self.save_image_inside_rectangle(image_path)
-            else:
-                self.showMessageBox("No New Rectangles", "There are no new rectangles to save.")
+    # def handleSave(self):
+        # if len(self.scene.items()) == 0:
+        #     # No new bounding boxes
+        #     if self.hasExistingRectangles():
+        #         self.showMessageBox("No New Rectangles", "There are no new rectangles to save.")
+        #     else:
+        #         self.showMessageBox("No Rectangles", "There are no rectangles to save.")
+        # else:
+        #     # New bounding boxes are present, perform the save functionality here
+        #     image_path = self.image_paths[self.current_image_index]
+        # #     if self.hasNewRectangles():
+        # #         print("Saving data...")
+        #     self.save_coordinates_to_json()
+        #     self.save_image_inside_rectangle(image_path)
+            # else:
+            #     self.showMessageBox("No New Rectangles", "There are no new rectangles to save.")
 
     def showMessageBox(self, title, text):
         message_box = QMessageBox(self)
@@ -286,7 +290,7 @@ class MainWindow(QWidget):
                             for point in data['coordinates']:
                                 item.addPoint(QPointF(point[0],point[1]))
                             self.scene.addItem(item)
-                            t = CustomLineEdit(f"{tuple(data['coordinates'][0])}_{tuple(data['coordinates'][1])}",self.scene,self.scroll_layout)
+                            t = CustomLineEdit(key,self.scene,self.scroll_layout)
                             self.text_data[image_path][t.index] = t
                             t.setText(data['text'])
                             t.setCursorPosition(0)
@@ -296,15 +300,15 @@ class MainWindow(QWidget):
                             item.moveBy(data['x'], data['y'])
                             item.setRotation(data['rotation'])
                             self.scene.addItem(item)
-                            t = CustomLineEdit(f"{data['x'],data['y']}",self.scene,self.scroll_layout)
+                            t = CustomLineEdit(key,self.scene,self.scroll_layout)
                             self.text_data[image_path][t.index] = t
                             t.setText(data['text'])
                             t.setCursorPosition(0)
                             self.scroll_layout.addWidget(t)
                     self.scrollable.setWidget(self.scroll_widget)
                 self.box.addWidget(self.scrollable)
-            self.button_save.clicked.connect(self.save_coordinates_to_json)
-            #self.button_save.clicked.connect(self.save_image_inside_rectangle)
+            # self.button_save.clicked.connect(self.save_coordinates_to_json)
+            # self.button_save.clicked.connect(self.save_image_inside_rectangle)
             
             #self.image_path = image_path
             self.scene.add_list()
@@ -340,11 +344,18 @@ class MainWindow(QWidget):
                     }
                     self.coordinates_data[image_path][key] = data
             # Update text data for existing coordinates
+            # print(self.text_data[image_path])
+            for i in range(self.scroll_layout.count()):
+                item = self.scroll_layout.itemAt(i)
+                wid = item.widget()
+                if isinstance(wid,CustomLineEdit):
+                    text = wid.text()
+                    self.text_data[image_path][wid.index].setText(text)
             if image_path in self.text_data:
                 for key, value in self.coordinates_data[image_path].items():
                     if key in self.text_data[image_path]:
                         value["text"] = self.text_data[image_path][key].text()
-
+            # print(self.coordinates_data[image_path])
             if not self.coordinates_data:
                 print("No coordinates to save.")
                 return
@@ -356,7 +367,7 @@ class MainWindow(QWidget):
             json_file = os.path.join(coordinates_folder, f"{image_name}_coordinates.json")
             with open(json_file, "w") as f:
                 json.dump(self.coordinates_data[image_path], f, indent=4)
-            print(self.coordinates_data[image_path])
+            # print(self.coordinates_data[image_path])
             self.load_image()
             self.scene.update()
 
@@ -405,7 +416,7 @@ class MainWindow(QWidget):
                 coordinates_folder = os.path.join(os.path.dirname(image_path), "coordinates", image_name)
                 image_folder = os.path.join(os.path.dirname(image_path), "image", image_name)
                 json_file_pattern = os.path.join(coordinates_folder, f"{image_name}_coordinates.json")
-                image_file_pattern = os.path.join(image_folder, f"{image_name}.png")
+                image_file_pattern = os.path.join(image_folder, f"{image_name}_rectangle_{pattern}.png")
 
                 # Delete JSON files
                 json_files = glob.glob(json_file_pattern)
@@ -448,7 +459,7 @@ class MainWindow(QWidget):
                     coordinates_folder = os.path.join(os.path.dirname(image_path), "coordinates", image_name)
                     image_folder = os.path.join(os.path.dirname(image_path), "image", image_name)
                     json_file_pattern = os.path.join(coordinates_folder, f"{image_name}_coordinates.json")
-                    image_file_pattern = os.path.join(image_folder, f"{image_name}.png")
+                    image_file_pattern = os.path.join(image_folder, f"{image_name}_rectangle_{key}.png")
                     json_files = glob.glob(json_file_pattern)
                     for json_file in json_files:
                         if os.path.exists(json_file):
@@ -456,7 +467,7 @@ class MainWindow(QWidget):
                                 data = json.load(f)
                             
                             for temp_key, value in list(data.items()):
-                                if temp_key != key:
+                                if temp_key != key and key[0] != "[":
                                     if ( 
                                         value['x'] == rect.x()
                                         and value['y'] == rect.y()
@@ -570,7 +581,7 @@ class MainWindow(QWidget):
             item = self.scroll_layout.itemAt(i).widget()
 
             if isinstance(item, CustomLineEdit):
-                if f"Rec:- {item.index}" == rec:
+                if f"{item.index}" == rec:
                     line_edit = item
                     line_edit.focusInEvent(QFocusEvent(QKeyEvent.FocusIn))
                 else:
@@ -597,7 +608,8 @@ class MainWindow(QWidget):
                     # self.scene.update()
                     break
 
-    def save_image_inside_rectangle(self, image_path):
+    def save_image_inside_rectangle(self):
+            image_path = self.image_paths[self.current_image_index]
             if not self.coordinates_data:
                 print("No coordinates to save.")
                 return
@@ -783,30 +795,32 @@ class MainWindow(QWidget):
         self.show()
     def min_run(self):
         folder_path = askdirectory(title="Select Folder ai folder")
-        try:
-            splash_pix = QPixmap("https://www.google.com/url?sa=i&url=https%3A%2F%2Fgithub.com%2Ftopics%2Fscreen-annotation&psig=AOvVaw0K5r_ors996VBjGeYkQjFX&ust=1689769272621000&source=images&cd=vfe&opi=89978449&ved=0CBEQjRxqFwoTCPD6u5-fmIADFQAAAAAdAAAAABAD") 
-            max_splash_size = QtCore.QSize(300, 300)
-            splash_pix = splash_pix.scaled(max_splash_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-            splash = QSplashScreen(splash_pix, Qt.WindowStaysOnTopHint)
-            desktop = QtWidgets.QApplication.desktop()
-            screen_rect = desktop.availableGeometry(desktop.primaryScreen())
-            splash.move(screen_rect.center() - splash.rect().center())
-            splash.setFixedSize(splash_pix.size())
-            splash.setMask(splash_pix.mask())
-        except Exception as e:
-            print("Error loading image:", e) 
-        splash.showMessage("Loading...", Qt.AlignBottom | Qt.AlignCenter, QtGui.QColor(Qt.black))
-        splash.show()
-        app.processEvents()
-        timer = QElapsedTimer()
-        timer.start()
-
-        while timer.elapsed() < 3000:  # 3000 milliseconds = 3 seconds
+        if folder_path:
+            try:
+                splash_pix = QPixmap("https://www.google.com/url?sa=i&url=https%3A%2F%2Fgithub.com%2Ftopics%2Fscreen-annotation&psig=AOvVaw0K5r_ors996VBjGeYkQjFX&ust=1689769272621000&source=images&cd=vfe&opi=89978449&ved=0CBEQjRxqFwoTCPD6u5-fmIADFQAAAAAdAAAAABAD") 
+                max_splash_size = QtCore.QSize(300, 300)
+                splash_pix = splash_pix.scaled(max_splash_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                splash = QSplashScreen(splash_pix, Qt.WindowStaysOnTopHint)
+                desktop = QtWidgets.QApplication.desktop()
+                screen_rect = desktop.availableGeometry(desktop.primaryScreen())
+                splash.move(screen_rect.center() - splash.rect().center())
+                splash.setFixedSize(splash_pix.size())
+                splash.setMask(splash_pix.mask())
+            except Exception as e:
+                print("Error loading image:", e) 
+            splash.showMessage("Loading...", Qt.AlignBottom | Qt.AlignCenter, QtGui.QColor(Qt.black))
+            splash.show()
             app.processEvents()
-        with open("folder_path.txt", "w") as file:
-            file.write(folder_path)
+            timer = QElapsedTimer()
+            timer.start()
+
+            while timer.elapsed() < 3000:  # 3000 milliseconds = 3 seconds
+                app.processEvents()
+            with open("folder_path.txt", "w") as file:
+                file.write(folder_path)
         if not folder_path:
-            sys.exit()
+            with open("folder_path.txt", "r") as file:
+                folder_path = file.read().strip()
         self.load_images_from_folder(folder_path)
         self.load_coordinates_from_json()
         self.load_image()
