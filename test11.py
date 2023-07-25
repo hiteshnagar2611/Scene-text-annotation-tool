@@ -315,6 +315,7 @@ class MainWindow(QWidget):
             #self.image_path = image_path
             self.scene.add_list()
             self.save_last_image_path()
+            self.create_blank_json_files()
             # self.scene.update()
         # self.save_coordinates_to_json()
 
@@ -372,6 +373,9 @@ class MainWindow(QWidget):
             # print(self.coordinates_data[image_path])
             self.load_image()
             self.scene.update()
+        
+        else:
+            self.showMessageBox("No Coordinates to Save", "There are no rectangles or polygons to save.") 
 
     def delete_rectangle(self):
             
@@ -569,20 +573,31 @@ class MainWindow(QWidget):
                 unsaved_rectangles = len(self.scene.items())
                 if unsaved_rectangles > saved_rectangles:
                     reply = QMessageBox.question(self, "Unsaved Changes",
-                                                 f"There are {unsaved_rectangles - saved_rectangles} unsaved rectangles on the current image.\n"
-                                                 f"Do you want to save the changes before moving to the previous image?",
-                                                 QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
+                                                f"There are {unsaved_rectangles - saved_rectangles} unsaved rectangles or polygons on the current image.\n"
+                                                "Do you want to save the changes before moving to the next image?",
+                                                QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
                     if reply == QMessageBox.Yes:
-                        self.handleSave()  # Save the changes
+                        self.save_coordinates_to_json()  # Save the changes
                     elif reply == QMessageBox.Cancel:
-                        return  # Cancel the action, do not move to the previous image
-                    
+                        return  # Cancel the action, do not move to the next image
+
         self.current_image_index += 1
         if self.current_image_index >= len(self.image_paths):
             self.current_image_index = 0
         self.load_image()
         self.update()
     
+    def create_blank_json_files(self):
+        for image_path in self.image_paths:
+            image_name = os.path.splitext(os.path.basename(image_path))[0]
+            coordinates_folder = os.path.join(os.path.dirname(image_path), "coordinates", image_name)
+            os.makedirs(coordinates_folder, exist_ok=True)
+
+            json_file = os.path.join(coordinates_folder, f"{image_name}_coordinates.json")
+            if not os.path.exists(json_file):
+                with open(json_file, "w") as f:
+                    # Write an empty dictionary as the initial content of the JSON file
+                    json.dump({}, f)
 
 
     def select_rectangle(self):
@@ -834,6 +849,7 @@ class MainWindow(QWidget):
             with open("folder_path.txt", "r") as file:
                 folder_path = file.read().strip()
         self.load_images_from_folder(folder_path)
+        #self.create_blank_json_files()
         self.load_coordinates_from_json()
         self.load_image()
         self.show()
