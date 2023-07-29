@@ -4,7 +4,8 @@
   1. Clone or download the zip folder of the repository.
   2. Unzip the zipped files and open the main.py file and run it.
   3. You will ask to select the folder of images. Select the folder and now start annotating.
-
+## .exe file
+  1. Go into the dist folder and run the main application to directly run the tool
 ## Link for the tool documentation
   https://docs.google.com/document/d/1Uaa3zA8UAS_9SWPOeY4MIJ8pCr-T93YCt7ttH3UqCXQ/edit?usp=sharing
 
