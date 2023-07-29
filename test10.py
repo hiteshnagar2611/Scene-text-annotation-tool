@@ -748,7 +748,7 @@ class MainWindow(QWidget):
 
     def run(self):
         try:
-            splash_pix = QPixmap("Scene-text-annotation-tool - Copy\sample.png") 
+            splash_pix = QPixmap("image.png") 
             max_splash_size = QtCore.QSize(300, 300)
             splash_pix = splash_pix.scaled(max_splash_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
             splash = QSplashScreen(splash_pix, Qt.WindowStaysOnTopHint)
@@ -797,7 +797,7 @@ class MainWindow(QWidget):
         folder_path = askdirectory(title="Select Folder ai folder")
         if folder_path:
             try:
-                splash_pix = QPixmap("https://www.google.com/url?sa=i&url=https%3A%2F%2Fgithub.com%2Ftopics%2Fscreen-annotation&psig=AOvVaw0K5r_ors996VBjGeYkQjFX&ust=1689769272621000&source=images&cd=vfe&opi=89978449&ved=0CBEQjRxqFwoTCPD6u5-fmIADFQAAAAAdAAAAABAD") 
+                splash_pix = QPixmap("image.png") 
                 max_splash_size = QtCore.QSize(300, 300)
                 splash_pix = splash_pix.scaled(max_splash_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
                 splash = QSplashScreen(splash_pix, Qt.WindowStaysOnTopHint)
