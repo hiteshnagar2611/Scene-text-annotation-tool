@@ -1,3 +1,4 @@
+# Importing necessary modules or classes may be required
 from PyQt5 import QtWidgets,QtGui,QtCore
 import os
 import json
