@@ -334,15 +334,16 @@ class MainWindow(QWidget):
 
             for item in self.scene.items():
                 if isinstance(item, GraphicsRectItem):
-                    rect = item.mapToScene(item.rect().topLeft())
-                    key = f"{rect.x()}_{rect.y()}_{item.rect().width()}_{item.rect().height()}"
+                    rect1 = item.mapToScene(item.rect().topLeft())
+                    rect2 = item.mapToScene(item.rect().bottomRight())
+                    key = f"{int(rect1.x())}_{int(rect1.y())}_{int(rect2.x())}_{int(rect2.y())}"
                     data = {
-                        'x': rect.x(),
-                        'y': rect.y(),
+                        'x': rect1.x(),
+                        'y': rect1.y(),
                         'width': item.rect().width(),
                         'height': item.rect().height(),
                         'rotation': item.rotation(),
-                        'text': f"{rect.x(), rect.y()}"
+                        'text': f"{rect1.x(), rect1.y()}"
                     }
                     self.coordinates_data[image_path][key] = data
                 elif isinstance(item,CustomPolygonItem):
@@ -413,8 +414,9 @@ class MainWindow(QWidget):
 
                 if selected_item_r:
                     rect = selected_item_r.mapToScene(selected_item_r.rect().topLeft())
-                    data = f"Rec:- {rect.x(), rect.y()}"
-                    pattern = f"{rect.x()}_{rect.y()}_{selected_item_r.rect().width()}_{selected_item_r.rect().height()}"
+                    rect2 = selected_item_r.mapToScene(selected_item_r.rect().bottomRight())
+                    data = f"{int(rect.x()), int(rect.y())}"
+                    pattern = f"{int(rect.x())}_{int(rect.y())}_{int(rect2.x())}_{int(rect2.y())}"
                     self.scene.removeItem(selected_item_r)
 
                     image_path = self.image_paths[self.current_image_index]
@@ -422,11 +424,10 @@ class MainWindow(QWidget):
                         d = self.coordinates_data[image_path]
                         for key, value in list(d.items()):
                             if key[0] != "[":
-                                if f"Rec:- {value['x'], value['y']}" == data:
-                                    key_to_delete = f"{value['x'], value['y']}"
+                                if f"{int(value['x']),int(value['y'])}" == data:
+                                    key_to_delete = data
                                     if key_to_delete in self.text_data[image_path]:
                                         del self.text_data[image_path][key_to_delete]
-                                    #del self.text_data[image_path][f"{value['x'], value['y']}"]
                                     del self.coordinates_data[image_path][key]
 
                     # Delete the corresponding JSON file and image file
@@ -535,7 +536,7 @@ class MainWindow(QWidget):
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Delete:
             self.delete_rectangle()
-            
+
 
     def load_coordinates_from_json(self):
         self.coordinates_data = {}
@@ -691,7 +692,7 @@ class MainWindow(QWidget):
 
                     # # Create a cropped image of the rectangle area
                     cropped_image = original_image.copy(int(left), int(top), int(width), int(height))
-                    data = f"{left}_{top}_{width}_{height}"
+                    data = f"{i}"
 
     
                 # # Save the cropped image with a unique name

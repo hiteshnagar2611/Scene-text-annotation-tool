@@ -22,8 +22,9 @@ class CustomLineEdit(QLineEdit):
         rect = None
         for item in self.scene.items():
             if isinstance(item, QGraphicsRectItem):
-                data = item.mapToScene(item.rect().topLeft())
-                rect = f"{data.x()}_{data.y()}_{item.rect().width()}_{item.rect().height()}"
+                data1 = item.mapToScene(item.rect().topLeft())
+                data2 = item.mapToScene(item.rect().bottomRight())
+                rect = f"{int(data1.x())}_{int(data1.y())}_{int(data2.x())}_{int(data2.y())}"
                 if rect  == self.index:
                     item.setSelected(True)
                 else:

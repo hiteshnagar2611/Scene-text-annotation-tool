@@ -170,8 +170,9 @@ class GraphicsScene(QtWidgets.QGraphicsScene):
         self.update()
         for item in self.selectedItems():
             if isinstance(item, QGraphicsRectItem) and item.isSelected():
-                data = item.mapToScene(item.rect().topLeft())
-                rect = f"{data.x()}_{data.y()}_{item.rect().width()}_{item.rect().height()}"
+                data1 = item.mapToScene(item.rect().topLeft())
+                data2 = item.mapToScene(item.rect().bottomRight())
+                rect = f"{int(data1.x())}_{int(data1.y())}_{int(data2.x())}_{int(data2.y())}"
                 self.rot.setText(str(int(2*item.rotation())))
                 break
             elif isinstance(item,CustomPolygonItem) and item.isSelected():
@@ -214,9 +215,11 @@ class GraphicsScene(QtWidgets.QGraphicsScene):
         self.label_c.clear()
         # self.save_coordinates_to_json()
         for i,item in enumerate(self.items()):
+
+            
             if isinstance(item,GraphicsRectItem):
                 rect = item.mapToScene(item.rect().topLeft())
-                self.label_c.addItem(f"Rec:- {rect.x(),rect.y()}")
+                self.label_c.addItem(f"{int(rect.x()),int(rect.y())}")
                 if self.image in self.coordinates_data:
                     data = {
                         'x': rect.x(),
