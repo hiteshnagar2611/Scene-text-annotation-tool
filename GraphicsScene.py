@@ -30,9 +30,9 @@ class CustomPolygonItem(QGraphicsPolygonItem):
 
         # Size handlers
         self.size_handles = []
-        self.size_handle_size = 8
+        self.size_handle_size = 10
         self.size_handle_pen = QPen(Qt.black)
-        self.size_handle_brush = QBrush(Qt.white)
+        self.size_handle_brush = QBrush(Qt.red)
 
     def addPoint(self, pos):
         self.polygon.append(pos)
@@ -114,7 +114,7 @@ class CustomPolygonItem(QGraphicsPolygonItem):
 
 
 class GraphicsScene(QtWidgets.QGraphicsScene):
-    def __init__(self, image,label_coordinates,coor_data,scroll_layout,parent = None):
+    def __init__(self, image,label_coordinates,coor_data,scroll_layout,rot,parent = None):
         super(GraphicsScene, self).__init__(parent)
         self._start = QtCore.QPointF()
         self._current_rect_item = None
@@ -124,7 +124,7 @@ class GraphicsScene(QtWidgets.QGraphicsScene):
         self.label_c = label_coordinates
         self.coordinates_data = coor_data
         self.scroll_layout = scroll_layout
-
+        self.rot = rot
         self.cubes = []
         self.currentItem = None
         self.polygons = []
@@ -172,12 +172,14 @@ class GraphicsScene(QtWidgets.QGraphicsScene):
             if isinstance(item, QGraphicsRectItem) and item.isSelected():
                 data = item.mapToScene(item.rect().topLeft())
                 rect = f"{data.x()}_{data.y()}_{item.rect().width()}_{item.rect().height()}"
+                self.rot.setText(str(int(2*item.rotation())))
                 break
             elif isinstance(item,CustomPolygonItem) and item.isSelected():
                 cor = item.getCoordinates()
                 if len(cor) > 2:
                     key = str(cor)
                     rect = key
+                    self.rot.setText(str(int(2*item.rotation())))
                     break
         for i in range(self.scroll_layout.count()):
             item = self.scroll_layout.itemAt(i).widget()
@@ -202,33 +204,12 @@ class GraphicsScene(QtWidgets.QGraphicsScene):
         # Draw custom background image
         painter.drawImage(rect, QImage(self.image))
         self.update()
-
-    def clearCurrentPolygon(self):
-        if self.currentItem:
-            self.removeItem(self.currentItem)
-
-    def finishCurrentPolygon(self):
-        if self.currentItem:
-            self.polygons.append(self.currentItem.polygon)
-            self.currentItem = None
-
-    def keyPressEvent(self, event):
-            if event.key() == Qt.Key_Delete:
-                data = None
-                for item in self.selectedItems():
-                    if isinstance(item, GraphicsRectItem):
-                        rect = item.mapToScene(item.rect().topLeft())
-                        data = f"{rect.x()}_{rect.y()}_{item.rect().width()}_{item.rect().height()}"
-                        found_in_layout = False
-                        for i in range(self.scroll_layout.count()):
-                            text = self.scroll_layout.itemAt(i).widget()
-                            if isinstance(text, CustomLineEdit):
-                                if text.index == data:
-                                    found_in_layout = True
-                                    break
-                        if not found_in_layout:
-                            self.removeItem(item)
-        
+    
+    def keyPressEvent(self, event: QKeyEvent) -> None:
+        if event.matches(QKeySequence.Undo):
+            if self.currentItem:
+                self.currentItem.polygon = self.currentItem.polygon[:-1]
+                self.currentItem.updateSizeHandles()
     def add_list(self):
         self.label_c.clear()
         # self.save_coordinates_to_json()

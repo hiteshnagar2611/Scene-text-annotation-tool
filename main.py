@@ -90,7 +90,21 @@ class MainWindow(QWidget):
         self.button_save.clicked.connect(self.save_coordinates_to_json)
         self.button_save.clicked.connect(self.save_image_inside_rectangle)
     
- 
+        self.increase_rot = QPushButton('Rotate +')
+        self.decrease_rot = QPushButton('Rotate -')
+
+
+        self.increase_rot.clicked.connect(lambda: self.rotate_selected_item_r(1))
+
+
+        self.decrease_rot.clicked.connect(lambda: self.rotate_selected_item_r(-1))
+
+
+        self.rotation_value = QLineEdit()
+        self.rotation_value.setText("0")
+        self.rotation_value.setFixedSize(45,35)
+        self.rotation_value.setAlignment(Qt.AlignCenter)
+        self.rotation_value.returnPressed.connect(lambda: self.rotate_selected_item_r(0))
 
         self.button_delete = AnimatedButton2("Delete")
         # Connect the delete button to a slot if needed
@@ -101,11 +115,6 @@ class MainWindow(QWidget):
         self.activate_button.setChecked(False)
         self.activate_button.toggled.connect(self.toggle_painting)
 
-        self.clear_button = QPushButton("Clear")
-        self.clear_button.clicked.connect(self.clear_current_polygon)
-
-        self.finish_button = QPushButton("Finish")
-        self.finish_button.clicked.connect(self.finish_current_polygon)
 
         self.ask_folder = QPushButton("Choose Folder")
         self.ask_folder.clicked.connect(self.min_run)
@@ -119,7 +128,7 @@ class MainWindow(QWidget):
         self.slider.setValue(0)
         self.slider.setTickInterval(5)
         self.slider.setTickPosition(QSlider.TicksBelow)
-        self.slider.valueChanged.connect(self.rotate_selected_item_r)
+        self.slider.valueChanged.connect(lambda: self.rotate_selected_item_r(1))
 
 
         self.label_coordinates = QListWidget()
@@ -142,14 +151,15 @@ class MainWindow(QWidget):
 
         hbox2 = QHBoxLayout()
 
+        hbox2.addWidget(self.increase_rot)
+        hbox2.addWidget(self.rotation_value)
+        hbox2.addWidget(self.decrease_rot)
         hbox2.addWidget(self.activate_button)
-        hbox2.addWidget(self.clear_button)
-        hbox2.addWidget(self.finish_button)
         hbox2.addWidget(self.ask_folder)
         vbox2 = QVBoxLayout()
         
 
-        self.scene = GraphicsScene('',self.label_coordinates,self.coordinates_data,self.scroll_layout,self)
+        self.scene = GraphicsScene('',self.label_coordinates,self.coordinates_data,self.scroll_layout,self.rotation_value,self)
 
         self.pixmap = QPixmap()
         self.view = QGraphicsView(self.scene)
@@ -181,17 +191,13 @@ class MainWindow(QWidget):
 
     def toggle_painting(self, checked):
         self.scene.is_painting_activated = checked
+        print(checked)
         if checked:
             self.activate_button.setText("End Polygon")
         else:
             self.activate_button.setText("Draw Polygon")
-        self.scene.clearCurrentPolygon()
+            self.scene.currentItem = None
 
-    def clear_current_polygon(self):
-        self.scene.clearCurrentPolygon()
-
-    def finish_current_polygon(self):
-        self.scene.finishCurrentPolygon()
 
 
     # def handleSave(self):
@@ -460,10 +466,11 @@ class MainWindow(QWidget):
                             print(f"Image file removed successfully: {image_file}")
 
                     print("Item removed successfully.")
-                    self.load_image()
+                    # self.load_image()
                 elif selected_item_p:
                     image_path = self.image_paths[self.current_image_index]
                     key = str(selected_item_p.getCoordinates())
+                    self.scene.removeItem(selected_item_p)
                     if key in self.coordinates_data[image_path]:
                         temp_data = self.coordinates_data[image_path][key]
                         del self.coordinates_data[image_path][key]
@@ -504,7 +511,7 @@ class MainWindow(QWidget):
                                 print(f"Image file removed successfully: {image_file}")
 
                         print("Item removed successfully.")
-                        self.load_image()
+                        # self.load_image()
 
                 else:
                     message_box = QMessageBox(self)
@@ -524,6 +531,11 @@ class MainWindow(QWidget):
             traceback.print_exc() 
 
         self.selected_index = -1
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Delete:
+            self.delete_rectangle()
+            
 
     def load_coordinates_from_json(self):
         self.coordinates_data = {}
@@ -766,13 +778,17 @@ class MainWindow(QWidget):
                 if last_image_path and last_image_path in self.image_paths:
                     self.current_image_index = self.image_paths.index(last_image_path)
 
-    def rotate_selected_item_r(self):
-        rotation_angle = self.slider.value()
+    def rotate_selected_item_r(self,value):
         for item in self.scene.items():
-            if isinstance(item, QGraphicsRectItem) and item.isSelected():
-                item.setRotation(rotation_angle)
+            if isinstance(item, GraphicsRectItem) and item.isSelected():
+                point = item.rect().topLeft()
+                value += int(self.rotation_value.text())
+                # item.setTransformOriginPoint(point)
+                item.setRotation(value/2)
+                self.rotation_value.setText(str(int(value)))
                 break
         self.update()
+    
 
     def run(self):
         try:

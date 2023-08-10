@@ -58,12 +58,15 @@ class GraphicsRectItem(QGraphicsRectItem):
                 return k
         return None
 
-    def rotate(self, angle):
+    def rotate(self, angle=0) :
         """
         Rotate the item by the given angle (in degrees).
         """
-        # self.rotationAngle += angle
-        self.setRotation(angle)
+        self.rotationAngle = self.rotation()
+        self.rotationAngle += 15
+        data = self.mapRectToScene(self.rect())
+        self.setTransformOriginPoint(data.x(),data.y())
+        self.setRotation(self.rotationAngle)
         self.updateHandlesPos()
 
     def hoverMoveEvent(self, moveEvent):
