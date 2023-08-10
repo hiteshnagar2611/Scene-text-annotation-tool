@@ -23,7 +23,7 @@ class AnimatedButton1(QPushButton):
         super(AnimatedButton1, self).__init__(parent)
         self.defaultText = "Save"
         self.savedText = "Saved"
-        self.animationDuration = 2000  # Duration in milliseconds
+        self.animationDuration = 200  # Duration in milliseconds
         self.clicked.connect(self.animateSave)
 
         # Move the connections to the __init__ method
@@ -46,7 +46,7 @@ class AnimatedButton2(QPushButton):
         super(AnimatedButton2, self).__init__(parent)
         self.defaultText = "Delete"
         self.deletedText = "Deleted"
-        self.animationDuration = 2000  # Duration in milliseconds
+        self.animationDuration = 200  # Duration in milliseconds
         self.clicked.connect(self.animateDelete)
 
     def animateDelete(self):
@@ -227,7 +227,7 @@ class MainWindow(QWidget):
         close_timer = QTimer(self)
         close_timer.setSingleShot(True)
         close_timer.timeout.connect(message_box.close)
-        close_timer.start(3000)
+        close_timer.start(300)
 
     def hasExistingRectangles(self):
         image_path = self.image_paths[self.current_image_index]
@@ -305,8 +305,8 @@ class MainWindow(QWidget):
                             t.setCursorPosition(0)
                             self.scroll_layout.addWidget(t)
                         else:   
-                            item = GraphicsRectItem(QRectF(QPointF(0,0),QSizeF(data['width'],data['height'])))
-                            item.moveBy(data['x'], data['y'])
+                            item = GraphicsRectItem(QRectF(QPointF(0,0),QSizeF(data['x2'] - data['x1'],data['y2'] - data['y1'])))
+                            item.moveBy(data['x1'], data['y1'])
                             item.setRotation(data['rotation'])
                             self.scene.addItem(item)
                             t = CustomLineEdit(key,self.scene,self.scroll_layout)
@@ -320,7 +320,7 @@ class MainWindow(QWidget):
             # self.button_save.clicked.connect(self.save_image_inside_rectangle)
             
             #self.image_path = image_path
-            self.scene.add_list()
+            # self.scene.add_list()
             self.save_last_image_path()
             self.create_blank_json_files()
             # self.scene.update()
@@ -338,10 +338,10 @@ class MainWindow(QWidget):
                     rect2 = item.mapToScene(item.rect().bottomRight())
                     key = f"{int(rect1.x())}_{int(rect1.y())}_{int(rect2.x())}_{int(rect2.y())}"
                     data = {
-                        'x': rect1.x(),
-                        'y': rect1.y(),
-                        'width': item.rect().width(),
-                        'height': item.rect().height(),
+                        'x1': rect1.x(),
+                        'y1': rect1.y(),
+                        'x2': rect2.x(),
+                        'y2': rect2.y(),
                         'rotation': item.rotation(),
                         'text': f"{rect1.x(), rect1.y()}"
                     }
@@ -447,10 +447,10 @@ class MainWindow(QWidget):
                             for key, value in list(data.items()):
                                 if key[0] != "[":
                                     if (
-                                        value['x'] == rect.x()
-                                        and value['y'] == rect.y()
-                                        and value['width'] == selected_item_r.rect().width()
-                                        and value['height'] == selected_item_r.rect().height()
+                                        value['x1'] == rect.x()
+                                        and value['y1'] == rect.y()
+                                        and value['x2'] == rect2.x()
+                                        and value['y2'] == rect2.y()
                                     ):
                                         del data[key]
                                         break
@@ -487,18 +487,10 @@ class MainWindow(QWidget):
                                     data = json.load(f)
                                 
                                 for temp_key, value in list(data.items()):
-                                    if temp_key != key and key[0] != "[":
-                                        if ( 
-                                            value['x'] == rect.x()
-                                            and value['y'] == rect.y()
-                                            and value['width'] == selected_item_r.rect().width()
-                                            and value['height'] == selected_item_r.rect().height()
-                                        ):
-                                            del data[temp_key]
+                                    if (temp_key == key):
+                                        if value['coordinates'] == temp_data['coordinates']:
+                                            del data[key]
                                             break
-                                    elif (value['coordinates'] == temp_data['coordinates']):
-                                        del data[key]
-                                        break
                                 
                                 with open(json_file, 'w') as f:
                                     json.dump(data, f, indent=4)
@@ -685,10 +677,10 @@ class MainWindow(QWidget):
                     cropped_image.paste(image, mask=mask)
                     data = f"{d[i]['coordinates']}"
                 else:
-                    left = d[i]['x']
-                    top = d[i]['y']
-                    width = d[i]['width']
-                    height = d[i]['height']
+                    left = d[i]['x1']
+                    top = d[i]['y1']
+                    width = d[i]['x2'] - d[i]['x1']
+                    height = d[i]['y2'] - d[i]['y1']
 
                     # # Create a cropped image of the rectangle area
                     cropped_image = original_image.copy(int(left), int(top), int(width), int(height))

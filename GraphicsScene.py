@@ -161,7 +161,6 @@ class GraphicsScene(QtWidgets.QGraphicsScene):
     def mouseReleaseEvent(self, event):
 
         self._current_rect_item = None
-        self.add_list()
         for item in self.items():
             if isinstance(item, GraphicsRectItem):
                 if item.rect().height()==0 and item.rect().width() == 0:
@@ -211,23 +210,5 @@ class GraphicsScene(QtWidgets.QGraphicsScene):
             if self.currentItem:
                 self.currentItem.polygon = self.currentItem.polygon[:-1]
                 self.currentItem.updateSizeHandles()
-    def add_list(self):
-        self.label_c.clear()
-        # self.save_coordinates_to_json()
-        for i,item in enumerate(self.items()):
-
-            
-            if isinstance(item,GraphicsRectItem):
-                rect = item.mapToScene(item.rect().topLeft())
-                self.label_c.addItem(f"{int(rect.x()),int(rect.y())}")
-                if self.image in self.coordinates_data:
-                    data = {
-                        'x': rect.x(),
-                        'y': rect.y(),
-                        'width': item.rect().width(),
-                        'height': item.rect().height()
-                    }
-                    self.coordinates_data[self.image][i] = data
-
 
     
