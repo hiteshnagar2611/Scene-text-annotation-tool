@@ -390,7 +390,8 @@ class MainWindow(QWidget):
             self.showMessageBox("No Coordinates to Save", "There are no rectangles or polygons to save.") 
 
     def delete_rectangle(self):
-            
+        if len(self.scene.selectedItems()) == 0:
+            return 
         try:
             if len(self.scene.items()) == 0:
                 # No bounding boxes present
