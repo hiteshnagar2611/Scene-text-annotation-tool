@@ -16,6 +16,7 @@ import shutil
 from PIL import Image, ImageDraw
 from shapely.geometry import Polygon
 import traceback
+import math
 
 
 class AnimatedButton1(QPushButton):
@@ -63,6 +64,7 @@ class AnimatedButton2(QPushButton):
 
 
 class MainWindow(QWidget):
+    
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
         self.current_image_index = 0
@@ -84,30 +86,28 @@ class MainWindow(QWidget):
         self.button_next = QPushButton("Next")
         self.button_next.clicked.connect(self.button_click_next)
 
-        #self.button_save = QPushButton("Save")
         self.button_save = AnimatedButton1("Save")
-        # Connect the save button to a slot if needed
         self.button_save.clicked.connect(self.save_coordinates_to_json)
-        self.button_save.clicked.connect(self.save_image_inside_rectangle)
     
-        self.increase_rot = QPushButton('Rotate +')
-        self.decrease_rot = QPushButton('Rotate -')
+        self.increase_rot = QPushButton('R+')
+        self.decrease_rot = QPushButton('R-')
 
 
-        self.increase_rot.clicked.connect(lambda: self.rotate_selected_item_r(1))
+        self.increase_rot.clicked.connect(lambda: self.rotate_selected_item_r(5))
+        self.decrease_rot.clicked.connect(lambda: self.rotate_selected_item_r(-5))
 
-
-        self.decrease_rot.clicked.connect(lambda: self.rotate_selected_item_r(-1))
-
+        self.increase_rot.setFixedSize(45,35)
+        self.decrease_rot.setFixedSize(45,35)
 
         self.rotation_value = QLineEdit()
         self.rotation_value.setText("0")
+        self.rotation_value.setValidator(QIntValidator(-360, 360, self))
+        # self.rotation_value.setValidator(QValidator.)
         self.rotation_value.setFixedSize(45,35)
         self.rotation_value.setAlignment(Qt.AlignCenter)
         self.rotation_value.returnPressed.connect(lambda: self.rotate_selected_item_r(0))
 
         self.button_delete = AnimatedButton2("Delete")
-        # Connect the delete button to a slot if needed
         self.button_delete.clicked.connect(self.handleDelete)
 
         self.activate_button = QPushButton("Draw Polygon")
@@ -133,7 +133,6 @@ class MainWindow(QWidget):
 
         self.label_coordinates = QListWidget()
         self.box = QHBoxLayout()
-        # self.box.addWidget(self.label_coordinates)
 
         self.scrollable = QScrollArea()
         self.scrollable.setWidgetResizable(True)
@@ -146,14 +145,13 @@ class MainWindow(QWidget):
         hbox.addWidget(self.button_save)
         hbox.addWidget(self.button_delete)  
         hbox.addWidget(self.button_reset)
-        #hbox.addWidget(self.button_save_crop)
         hbox.addWidget(self.button_ai_modale_load)
 
         hbox2 = QHBoxLayout()
 
-        hbox2.addWidget(self.increase_rot)
-        hbox2.addWidget(self.rotation_value)
         hbox2.addWidget(self.decrease_rot)
+        hbox2.addWidget(self.rotation_value)
+        hbox2.addWidget(self.increase_rot)
         hbox2.addWidget(self.activate_button)
         hbox2.addWidget(self.ask_folder)
         vbox2 = QVBoxLayout()
@@ -167,7 +165,6 @@ class MainWindow(QWidget):
         self.scene.setSceneRect(0, 0,self.pixmap.width() , self.pixmap.height())
 
         self.view.setFixedSize(QSize(int(self.pixmap.width()) , int(self.pixmap.height())))
-        # self.box.setGeometry(QRect(0,0,int(self.pixmap.width()) , int(self.pixmap.height())))
 
         self.view.setScene(self.scene)
         self.view.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
@@ -185,12 +182,11 @@ class MainWindow(QWidget):
         vbox2.addWidget(self.slider)  
         self.setLayout(vbox2)
         self.label_coordinates.clicked.connect(self.select_rectangle)
-        #self.button_save_crop.clicked.connect(self.save_image_inside_rectangle)
         self.button_reset.clicked.connect(self.reset_image)
         self.button_delete.clicked.connect(self.delete_rectangle)
         self.button_ai_modale_load.clicked.connect(self.call_modale)
-
-
+        self.deleteShortcut = QShortcut(QKeySequence.Delete, self)
+        self.deleteShortcut.activated.connect(self.delete_rectangle)
 
     def toggle_painting(self, checked):
         self.scene.is_painting_activated = checked
@@ -200,25 +196,6 @@ class MainWindow(QWidget):
         else:
             self.activate_button.setText("Draw Polygon")
             self.scene.currentItem = None
-
-
-
-    # def handleSave(self):
-        # if len(self.scene.items()) == 0:
-        #     # No new bounding boxes
-        #     if self.hasExistingRectangles():
-        #         self.showMessageBox("No New Rectangles", "There are no new rectangles to save.")
-        #     else:
-        #         self.showMessageBox("No Rectangles", "There are no rectangles to save.")
-        # else:
-        #     # New bounding boxes are present, perform the save functionality here
-        #     image_path = self.image_paths[self.current_image_index]
-        # #     if self.hasNewRectangles():
-        # #         print("Saving data...")
-        #     self.save_coordinates_to_json()
-        #     self.save_image_inside_rectangle(image_path)
-            # else:
-            #     self.showMessageBox("No New Rectangles", "There are no new rectangles to save.")
 
     def showMessageBox(self, title, text):
         message_box = QMessageBox(self)
@@ -248,7 +225,6 @@ class MainWindow(QWidget):
             return new_rectangles > saved_rectangles
         return True
             
-
     def handleDelete(self):
         if len(self.scene.items()) == 0:
             # No bounding boxes present
@@ -309,10 +285,12 @@ class MainWindow(QWidget):
                             t.setCursorPosition(0)
                             self.scroll_layout.addWidget(t)
                         else:   
-                            item = GraphicsRectItem(QRectF(QPointF(0,0),QSizeF(data['x2'] - data['x1'],data['y2'] - data['y1'])))
+                            item = GraphicsRectItem(QRectF(QPointF(0,0),QSizeF(data['width'],data['height'])))
+                            # print(data['x2'] - data['x1'],data['y2'] - data['y1'])
                             item.moveBy(data['x1'], data['y1'])
                             item.setRotation(data['rotation'])
                             self.scene.addItem(item)
+                            print(key)
                             t = CustomLineEdit(key,self.scene,self.scroll_layout)
                             self.text_data[image_path][t.index] = t
                             t.setText(data['text'])
@@ -320,34 +298,36 @@ class MainWindow(QWidget):
                             self.scroll_layout.addWidget(t)
                     self.scrollable.setWidget(self.scroll_widget)
                 self.box.addWidget(self.scrollable)
-            # self.button_save.clicked.connect(self.save_coordinates_to_json)
-            # self.button_save.clicked.connect(self.save_image_inside_rectangle)
-            
-            #self.image_path = image_path
-            # self.scene.add_list()
             self.save_last_image_path()
             self.create_blank_json_files()
-            # self.scene.update()
-        # self.save_coordinates_to_json()
-
 
     def save_coordinates_to_json(self):
         if self.image_paths and len(self.scene.items()) != 0:
             image_path = self.image_paths[self.current_image_index]
             self.coordinates_data[image_path] = {}
-
+            self.toggle_painting(False)
             for item in self.scene.items():
                 if isinstance(item, GraphicsRectItem):
                     rect1 = item.mapToScene(item.rect().topLeft())
                     rect2 = item.mapToScene(item.rect().bottomRight())
+                    theta = 2*item.rotation()
+                    print(theta)
+                    dx = int(rect2.x() - rect1.x())
+                    dy = int(rect2.y() - rect1.y())
+                    c = int(rect1.x() + dx * math.cos(theta) - dy * math.sin(theta))
+                    d = int(rect1.y() + dx * math.sin(theta) + dy * math.cos(theta))
+
                     key = f"{int(rect1.x())}_{int(rect1.y())}_{int(rect2.x())}_{int(rect2.y())}"
+                    print(key)
                     data = {
                         'x1': rect1.x(),
                         'y1': rect1.y(),
                         'x2': rect2.x(),
                         'y2': rect2.y(),
+                        'height' : item.rect().height(),
+                        'width' : item.rect().width(),
                         'rotation': item.rotation(),
-                        'text': f"{rect1.x(), rect1.y()}"
+                        'text': f"{int(rect1.x()), int(rect1.y())}"
                     }
                     self.coordinates_data[image_path][key] = data
                 elif isinstance(item,CustomPolygonItem):
@@ -560,11 +540,6 @@ class MainWindow(QWidget):
             self.box.addWidget(self.scrollable)
         self.selected_index = -1
 
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Delete:
-            self.delete_rectangle()
-
-
     def load_coordinates_from_json(self):
         self.coordinates_data = {}
         for image_path in self.image_paths:
@@ -640,7 +615,6 @@ class MainWindow(QWidget):
                     # Write an empty dictionary as the initial content of the JSON file
                     json.dump({}, f)
 
-
     def select_rectangle(self):
         self.selected_index = self.label_coordinates.currentItem()
         rec = self.label_coordinates.currentItem().text()
@@ -668,69 +642,6 @@ class MainWindow(QWidget):
                 else:
                     item.setSelected(False)
     
-    def rotate_rec(self):
-        for item in self.scene.items():
-            if isinstance(item,GraphicsRectItem):
-                if item.isSelected():
-                    item.rotate(5)
-                    # self.scene.update()
-                    break
-
-    def save_image_inside_rectangle(self):
-            image_path = self.image_paths[self.current_image_index]
-            if not self.coordinates_data:
-                print("No coordinates to save.")
-                return
-
-        #for image_path in self.coordinates_data:
-            image_name = os.path.splitext(os.path.basename(image_path))[0]
-            image_folder = os.path.join(os.path.dirname(image_path), "image", image_name)
-            os.makedirs(image_folder, exist_ok=True)
-            
-
-            existing_files = os.listdir(image_folder)
-            for file_name in existing_files:
-                if file_name.endswith(".png"):
-                    file_path = os.path.join(image_folder, file_name)
-                    os.remove(file_path)
-
-
-            d = self.coordinates_data[image_path]
-            original_image = QImage(image_path)
-            for i in d:
-
-                # Calculate the rectangle's dimensions
-                if i[0] == "[":
-                    image = Image.open(image_path)
-                    mask = Image.new("L", image.size, 0)
-                    draw = ImageDraw.Draw(mask)
-                    polygon_points = [QPointF(point[0], point[1]) for point in d[i]['coordinates']]
-                    polygon = Polygon([(point.x(), point.y()) for point in polygon_points])
-                    xy = [(int(point.x()), int(point.y())) for point in polygon_points]
-                    draw.polygon(xy, fill=255)
-                    cropped_image = Image.new("RGBA", image.size)
-                    cropped_image.paste(image, mask=mask)
-                    data = f"{d[i]['coordinates']}"
-                else:
-                    left = d[i]['x1']
-                    top = d[i]['y1']
-                    width = d[i]['x2'] - d[i]['x1']
-                    height = d[i]['y2'] - d[i]['y1']
-
-                    # # Create a cropped image of the rectangle area
-                    cropped_image = original_image.copy(int(left), int(top), int(width), int(height))
-                    data = f"{i}"
-
-    
-                # # Save the cropped image with a unique name
-                image_file = os.path.join(image_folder, f"{image_name}_rectangle_{data}.png")
-                cropped_image.save(image_file)
-    
-                print(f"Cropped image saved: {image_file}")
-
-
-
-
     def reset_image(self):
         if self.image_paths:
             image_path = self.image_paths[self.current_image_index]
@@ -765,8 +676,6 @@ class MainWindow(QWidget):
 
         self.repaint()
         self.call_modale()
-
-
 
     def call_modale(self):
         with open("folder_path.txt", "r") as file:
@@ -814,10 +723,11 @@ class MainWindow(QWidget):
                 # item.setTransformOriginPoint(point)
                 item.setRotation(value/2)
                 self.rotation_value.setText(str(int(value)))
+                # if(value >= 360 or value <= -360):
+                #    self.rotation_value.setText(str((int(value)%360 + 360)%360)) 
                 break
         self.update()
     
-
     def run(self):
         try:
             splash_pix = QPixmap("Scene-text-annotation-tool - Copy\sample.png") 
@@ -865,6 +775,7 @@ class MainWindow(QWidget):
         self.load_coordinates_from_json()
         self.load_image()
         self.show()
+    
     def min_run(self):
         folder_path = askdirectory(title="Select Folder ai folder")
         if folder_path:
