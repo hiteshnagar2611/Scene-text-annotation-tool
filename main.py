@@ -166,6 +166,9 @@ class MainWindow(QWidget):
         
         self.scene.setSceneRect(0, 0,self.pixmap.width() , self.pixmap.height())
 
+        self.view.setFixedSize(QSize(int(self.pixmap.width()) , int(self.pixmap.height())))
+        # self.box.setGeometry(QRect(0,0,int(self.pixmap.width()) , int(self.pixmap.height())))
+
         self.view.setScene(self.scene)
         self.view.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
         self.box.addWidget(self.view)
@@ -273,7 +276,8 @@ class MainWindow(QWidget):
             image_path = self.image_paths[self.current_image_index]
             self.scene.image= image_path
             self.pixmap = QPixmap(image_path)
-            
+            self.view.setFixedSize(QSize(720 , 480))
+
             # self.label_coordinates = self.scene.label_c
             self.scene.setSceneRect(0, 0, self.pixmap.width(), self.pixmap.height())
             self.view.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
