@@ -279,7 +279,7 @@ class MainWindow(QWidget):
             self.view.setFixedSize(QSize(720 , 480))
 
             # self.label_coordinates = self.scene.label_c
-            self.scene.setSceneRect(0, 0, self.pixmap.width(), self.pixmap.height())
+            self.scene.setSceneRect(0, 0, 720 , 480)
             self.view.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
             
             for item in self.scene.items():
@@ -404,6 +404,7 @@ class MainWindow(QWidget):
                 close_timer.setSingleShot(True)
                 close_timer.timeout.connect(message_box.close)
                 close_timer.start(3000)
+            # elif(len(self.coordinates_data[self.image_paths[self.current_image_index]]) == self.scene.items()):
             else:
                 # Bounding boxes are present
                 selected_item_r = None
@@ -419,7 +420,7 @@ class MainWindow(QWidget):
                 if selected_item_r:
                     rect = selected_item_r.mapToScene(selected_item_r.rect().topLeft())
                     rect2 = selected_item_r.mapToScene(selected_item_r.rect().bottomRight())
-                    data = f"{int(rect.x()), int(rect.y())}"
+                    data = f"{int(rect.x())}_{int(rect.y())}_{int(rect2.x())}_{int(rect2.y())}"
                     pattern = f"{int(rect.x())}_{int(rect.y())}_{int(rect2.x())}_{int(rect2.y())}"
                     self.scene.removeItem(selected_item_r)
 
@@ -428,11 +429,14 @@ class MainWindow(QWidget):
                         d = self.coordinates_data[image_path]
                         for key, value in list(d.items()):
                             if key[0] != "[":
-                                if f"{int(value['x']),int(value['y'])}" == data:
+                                if key == data:
                                     key_to_delete = data
                                     if key_to_delete in self.text_data[image_path]:
                                         del self.text_data[image_path][key_to_delete]
                                     del self.coordinates_data[image_path][key]
+                                    print("deleted rectangle")
+                                    break
+
 
                     # Delete the corresponding JSON file and image file
                     image_name = os.path.splitext(os.path.basename(image_path))[0]
@@ -521,12 +525,38 @@ class MainWindow(QWidget):
                     close_timer.setSingleShot(True)
                     close_timer.timeout.connect(message_box.close)
                     close_timer.start(3000)
+                    
+                        
 
         except Exception as e:
         # Handle the exception here (e.g., log the error or show an error message to the user).
             print(f"An error occurred: {e}")
             traceback.print_exc() 
 
+        while self.scroll_layout.count():
+                item = self.scroll_layout.takeAt(0)
+                widget = item.widget()
+                if widget:
+                    widget.deleteLater()
+        if self.coordinates_data != {}:
+            if image_path in self.coordinates_data:
+                self.text_data[image_path] = {}
+                for key in self.coordinates_data[image_path]:
+                    data = self.coordinates_data[image_path][key]
+                    if key[0] == "[" and key[-1] == "]":
+                        t = CustomLineEdit(key,self.scene,self.scroll_layout)
+                        self.text_data[image_path][t.index] = t
+                        t.setText(data['text'])
+                        t.setCursorPosition(0)
+                        self.scroll_layout.addWidget(t)
+                    else:   
+                        t = CustomLineEdit(key,self.scene,self.scroll_layout)
+                        self.text_data[image_path][t.index] = t
+                        t.setText(data['text'])
+                        t.setCursorPosition(0)
+                        self.scroll_layout.addWidget(t)
+                self.scrollable.setWidget(self.scroll_widget)
+            self.box.addWidget(self.scrollable)
         self.selected_index = -1
 
     def keyPressEvent(self, event):
