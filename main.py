@@ -161,21 +161,20 @@ class MainWindow(QWidget):
 
         self.pixmap = QPixmap()
         self.view = QGraphicsView(self.scene)
-        
-        self.scene.setSceneRect(0, 0,self.pixmap.width() , self.pixmap.height())
+        self.scene.setSceneRect(0, 0,1080, 720)
 
-        self.view.setFixedSize(QSize(int(self.pixmap.width()) , int(self.pixmap.height())))
+        self.view.setFixedSize(QSize(1080,720))
 
         self.view.setScene(self.scene)
-        self.view.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
-        self.box.addWidget(self.view)
-    
+
+        self.view_box = QVBoxLayout()
+        self.view_box.addWidget(self.view)
+        self.view_box.setAlignment(Qt.AlignCenter)
         self.scrollable.setWidget(self.scroll_widget)
         self.scrollable.setFixedWidth(250)
         self.box.addWidget(self.scrollable)
-        
-        
-        
+        self.box.addLayout(self.view_box)
+        self.box.setAlignment(Qt.AlignRight)
         vbox2.addLayout(self.box)
         vbox2.addLayout(hbox) 
         vbox2.addLayout(hbox2)
@@ -187,6 +186,7 @@ class MainWindow(QWidget):
         self.button_ai_modale_load.clicked.connect(self.call_modale)
         self.deleteShortcut = QShortcut(QKeySequence.Delete, self)
         self.deleteShortcut.activated.connect(self.delete_rectangle)
+
 
     def toggle_painting(self, checked):
         self.scene.is_painting_activated = checked
@@ -207,7 +207,7 @@ class MainWindow(QWidget):
         close_timer = QTimer(self)
         close_timer.setSingleShot(True)
         close_timer.timeout.connect(message_box.close)
-        close_timer.start(300)
+        close_timer.start(3000)
 
     def hasExistingRectangles(self):
         image_path = self.image_paths[self.current_image_index]
@@ -252,10 +252,8 @@ class MainWindow(QWidget):
             image_path = self.image_paths[self.current_image_index]
             self.scene.image= image_path
             self.pixmap = QPixmap(image_path)
-            self.view.setFixedSize(QSize(720 , 480))
-
-            # self.label_coordinates = self.scene.label_c
-            self.scene.setSceneRect(0, 0, 720 , 480)
+            self.view.setFixedSize(QSize(1080, 720))
+            self.scene.setSceneRect(0, 0, 1080 , 720)
             self.view.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
             
             for item in self.scene.items():
@@ -305,31 +303,57 @@ class MainWindow(QWidget):
         if self.image_paths and len(self.scene.items()) != 0:
             image_path = self.image_paths[self.current_image_index]
             self.coordinates_data[image_path] = {}
+            original_coordinates = {}
+            original_coordinates[image_path] = {}
             self.toggle_painting(False)
             for item in self.scene.items():
                 if isinstance(item, GraphicsRectItem):
                     rect1 = item.mapToScene(item.rect().topLeft())
-                    rect2 = item.mapToScene(item.rect().bottomRight())
-                    theta = 2*item.rotation()
-                    print(theta)
-                    dx = int(rect2.x() - rect1.x())
-                    dy = int(rect2.y() - rect1.y())
-                    c = int(rect1.x() + dx * math.cos(theta) - dy * math.sin(theta))
-                    d = int(rect1.y() + dx * math.sin(theta) + dy * math.cos(theta))
-
-                    key = f"{int(rect1.x())}_{int(rect1.y())}_{int(rect2.x())}_{int(rect2.y())}"
+                    rect3 = item.mapToScene(item.rect().bottomRight())
+                    key = f"{int(rect1.x())}_{int(rect1.y())}_{int(rect3.x())}_{int(rect3.y())}"
                     print(key)
                     data = {
                         'x1': rect1.x(),
                         'y1': rect1.y(),
-                        'x2': rect2.x(),
-                        'y2': rect2.y(),
+                        'x2': rect3.x(),
+                        'y2': rect3.y(),
                         'height' : item.rect().height(),
                         'width' : item.rect().width(),
                         'rotation': item.rotation(),
                         'text': f"{int(rect1.x()), int(rect1.y())}"
                     }
                     self.coordinates_data[image_path][key] = data
+
+                    rect2 = item.mapToScene(item.rect().topRight())
+                    rect4 = item.mapFromScene(item.rect().bottomLeft())
+
+                    with Image.open(image_path) as img:
+                        original_image_size = img.size
+                    if original_image_size is not None:
+                        scene_width = self.scene.width()
+                        scene_height = self.scene.height()
+                        image_width, image_height = original_image_size
+
+                        x1_image = int((rect1.x() / scene_width) * image_width)
+                        y1_image = int((rect1.y() / scene_height) * image_height)
+                        x2_image = int((rect2.x() / scene_width) * image_width)
+                        y2_image = int((rect2.y() / scene_height) * image_height)
+                        x3_image = int((rect3.x() / scene_width) * image_width)
+                        y3_image = int((rect3.y() / scene_height) * image_height)
+                        x4_image = int((rect4.x() / scene_width) * image_width)
+                        y4_image = int((rect4.y() / scene_height) * image_height)
+                        temp_key = f"{x1_image}{y1_image}{x3_image}{y3_image}"
+                        original_coordinates[image_path][temp_key] = {
+                            'x1' : x1_image,
+                            'y1' : y1_image,
+                            'x2' : x2_image,
+                            'y2' : y2_image,
+                            'x3' : x3_image,
+                            'y3' : y3_image,
+                            'x4' : x4_image,
+                            'y4' : y4_image,
+                        }
+                        print(original_coordinates[image_path][temp_key])
                 elif isinstance(item,CustomPolygonItem):
                     coord = item.getCoordinates()
                     key = str(coord)
@@ -338,8 +362,20 @@ class MainWindow(QWidget):
                         'text': f"{coord[1]}_{coord[2]}"
                     }
                     self.coordinates_data[image_path][key] = data
-            # Update text data for existing coordinates
-            # print(self.text_data[image_path])
+                    with Image.open(image_path) as img:
+                        original_image_size = img.size
+                        if original_image_size is not None:
+                            scene_width = self.scene.width()
+                            scene_height = self.scene.height()
+                            image_width, image_height = original_image_size
+
+                            print(coord)
+                            # coord_image = [(coord[i][0] / scene_width) * image_width, (coord[i][1] / scene_height) * image_height for i in coord]
+                            temp_key = str(coord)
+                            original_coordinates[image_path][temp_key] = {
+                                'coordinates': coord
+                            }
+
             for i in range(self.scroll_layout.count()):
                 item = self.scroll_layout.itemAt(i)
                 wid = item.widget()
@@ -350,7 +386,6 @@ class MainWindow(QWidget):
                 for key, value in self.coordinates_data[image_path].items():
                     if key in self.text_data[image_path]:
                         value["text"] = self.text_data[image_path][key].text()
-            # print(self.coordinates_data[image_path])
             if not self.coordinates_data:
                 print("No coordinates to save.")
                 return
@@ -358,11 +393,17 @@ class MainWindow(QWidget):
             image_name = os.path.splitext(os.path.basename(image_path))[0]
             coordinates_folder = os.path.join(os.path.dirname(image_path), "coordinates", image_name)
             os.makedirs(coordinates_folder, exist_ok=True)
+            original_coordinates_folder = os.path.join(os.path.dirname(image_path), "orginal_coordinates", image_name)
+            os.makedirs(original_coordinates_folder, exist_ok=True)
 
             json_file = os.path.join(coordinates_folder, f"{image_name}_coordinates.json")
             with open(json_file, "w") as f:
                 json.dump(self.coordinates_data[image_path], f, indent=4)
-            # print(self.coordinates_data[image_path])
+
+            json_file2 = os.path.join(original_coordinates_folder, f"{image_name}_original_coordinates.json")
+            with open(json_file2, "w") as f:
+                json.dump(original_coordinates[image_path], f, indent=4)
+
             self.load_image()
             self.scene.update()
         
@@ -774,7 +815,7 @@ class MainWindow(QWidget):
         self.load_images_from_folder(folder_path)
         self.load_coordinates_from_json()
         self.load_image()
-        self.show()
+        self.showMaximized()
     
     def min_run(self):
         folder_path = askdirectory(title="Select Folder ai folder")
@@ -808,7 +849,7 @@ class MainWindow(QWidget):
         #self.create_blank_json_files()
         self.load_coordinates_from_json()
         self.load_image()
-        self.show()
+        self.showMaximized()
 def message_handler(mode, context, message):
     pass  
 qInstallMessageHandler(message_handler)
@@ -819,8 +860,6 @@ if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     app.setAttribute(Qt.AA_Use96Dpi, True)
     w = MainWindow()
-    w.setWindowFlag(Qt.MSWindowsFixedSizeDialogHint)
-    w.setWindowFlags(w.windowFlags() & ~Qt.WindowMaximizeButtonHint)
     w.setStyleSheet("""
     /* General styles */
     QPushButton {

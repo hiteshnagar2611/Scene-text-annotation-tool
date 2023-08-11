@@ -118,9 +118,9 @@ class GraphicsScene(QtWidgets.QGraphicsScene):
         super(GraphicsScene, self).__init__(parent)
         self._start = QtCore.QPointF()
         self._current_rect_item = None
-        self.background_image = QPixmap(image)
+        # self.background_image = QGraphicsPixmapItem()
         self.image = image
-        self.setSceneRect(0,0,self.background_image.width(),self.background_image.height())
+        # self.setSceneRect(0,0,self.background_image.width(),self.background_image.height())
         self.label_c = label_coordinates
         self.coordinates_data = coor_data
         self.scroll_layout = scroll_layout
@@ -129,7 +129,7 @@ class GraphicsScene(QtWidgets.QGraphicsScene):
         self.currentItem = None
         self.polygons = []
         self.is_painting_activated = False
-
+        # self.background_image.setPixmap(QPixmap(self.image))
     def mousePressEvent(self, event):
         if self.itemAt(event.scenePos(), QtGui.QTransform()) is None and not self.is_painting_activated:
             self._current_rect_item = GraphicsRectItem()
