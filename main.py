@@ -81,46 +81,49 @@ class MainWindow(QWidget):
 
         self.button_prev = QPushButton("Previous")
         self.button_prev.clicked.connect(self.button_click_prev)
-       
-       
+        self.button_prev.setFixedSize(self.size().width()//4,self.size().height()//13)
+          
         self.button_next = QPushButton("Next")
         self.button_next.clicked.connect(self.button_click_next)
+        self.button_next.setFixedSize(self.size().width()//4,self.size().height()//13)
 
         self.button_save = AnimatedButton1("Save")
         self.button_save.clicked.connect(self.save_coordinates_to_json)
+        self.button_save.setFixedSize(self.size().width()//4,self.size().height()//13)
     
         self.increase_rot = QPushButton('R+')
         self.decrease_rot = QPushButton('R-')
-
-
         self.increase_rot.clicked.connect(lambda: self.rotate_selected_item_r(5))
         self.decrease_rot.clicked.connect(lambda: self.rotate_selected_item_r(-5))
-
         self.increase_rot.setFixedSize(45,35)
         self.decrease_rot.setFixedSize(45,35)
 
         self.rotation_value = QLineEdit()
         self.rotation_value.setText("0")
         self.rotation_value.setValidator(QIntValidator(-360, 360, self))
-        # self.rotation_value.setValidator(QValidator.)
         self.rotation_value.setFixedSize(45,35)
         self.rotation_value.setAlignment(Qt.AlignCenter)
         self.rotation_value.returnPressed.connect(lambda: self.rotate_selected_item_r(0))
 
         self.button_delete = AnimatedButton2("Delete")
         self.button_delete.clicked.connect(self.handleDelete)
+        self.button_delete.setFixedSize(self.size().width()//4,self.size().height()//13)
 
         self.activate_button = QPushButton("Draw Polygon")
         self.activate_button.setCheckable(True)
         self.activate_button.setChecked(False)
         self.activate_button.toggled.connect(self.toggle_painting)
+        self.activate_button.setFixedSize(self.size().width()//4,self.size().height()//13)
 
 
         self.ask_folder = QPushButton("Choose Folder")
         self.ask_folder.clicked.connect(self.min_run)
+        self.ask_folder.setFixedSize(self.size().width()//4,self.size().height()//13)
 
         self.button_reset = QPushButton("Reset")
+        self.button_reset.setFixedSize(self.size().width()//4,self.size().height()//13)
         self.button_ai_modale_load = QPushButton("Model_load")
+        self.button_ai_modale_load.setFixedSize(self.size().width()//4,self.size().height()//13)
         
         self.slider = QSlider(Qt.Horizontal)
         self.slider.setMinimum(-360)
@@ -130,10 +133,8 @@ class MainWindow(QWidget):
         self.slider.setTickPosition(QSlider.TicksBelow)
         self.slider.valueChanged.connect(lambda: self.rotate_selected_item_r(1))
 
-
         self.label_coordinates = QListWidget()
-        self.box = QHBoxLayout()
-
+        
         self.scrollable = QScrollArea()
         self.scrollable.setWidgetResizable(True)
         self.scroll_widget = QWidget(self.scrollable)
@@ -146,46 +147,53 @@ class MainWindow(QWidget):
         hbox.addWidget(self.button_delete)  
         hbox.addWidget(self.button_reset)
         hbox.addWidget(self.button_ai_modale_load)
-
+        hbox.setAlignment(Qt.AlignCenter)
+        
         hbox2 = QHBoxLayout()
-
         hbox2.addWidget(self.decrease_rot)
         hbox2.addWidget(self.rotation_value)
         hbox2.addWidget(self.increase_rot)
         hbox2.addWidget(self.activate_button)
         hbox2.addWidget(self.ask_folder)
-        vbox2 = QVBoxLayout()
+        hbox2.setAlignment(Qt.AlignCenter)
         
 
         self.scene = GraphicsScene('',self.label_coordinates,self.coordinates_data,self.scroll_layout,self.rotation_value,self)
-
         self.pixmap = QPixmap()
         self.view = QGraphicsView(self.scene)
         self.scene.setSceneRect(0, 0,1080, 720)
-
         self.view.setFixedSize(QSize(1080,720))
-
         self.view.setScene(self.scene)
 
         self.view_box = QVBoxLayout()
         self.view_box.addWidget(self.view)
         self.view_box.setAlignment(Qt.AlignCenter)
+        
         self.scrollable.setWidget(self.scroll_widget)
         self.scrollable.setFixedWidth(250)
+        
+        self.box = QHBoxLayout()
         self.box.addWidget(self.scrollable)
         self.box.addLayout(self.view_box)
         self.box.setAlignment(Qt.AlignRight)
+        
+        vbox2 = QVBoxLayout()
         vbox2.addLayout(self.box)
         vbox2.addLayout(hbox) 
         vbox2.addLayout(hbox2)
         vbox2.addWidget(self.slider)  
+        
         self.setLayout(vbox2)
+        
         self.label_coordinates.clicked.connect(self.select_rectangle)
         self.button_reset.clicked.connect(self.reset_image)
         self.button_delete.clicked.connect(self.delete_rectangle)
         self.button_ai_modale_load.clicked.connect(self.call_modale)
+        
         self.deleteShortcut = QShortcut(QKeySequence.Delete, self)
         self.deleteShortcut.activated.connect(self.delete_rectangle)
+        self.saveShortcut = QShortcut(QKeySequence.Save,self)
+        self.saveShortcut.activated.connect(self.save_coordinates_to_json)
 
 
     def toggle_painting(self, checked):
@@ -252,8 +260,12 @@ class MainWindow(QWidget):
             image_path = self.image_paths[self.current_image_index]
             self.scene.image= image_path
             self.pixmap = QPixmap(image_path)
-            self.view.setFixedSize(QSize(1080, 720))
-            self.scene.setSceneRect(0, 0, 1080 , 720)
+            if(self.pixmap.width() <= 1080 or self.pixmap.height() <= 720):
+                self.view.setFixedSize(QSize(self.pixmap.width(),self.pixmap.height()))
+                self.scene.setSceneRect(0,0,self.pixmap.width(),self.pixmap.height())
+            else:
+                self.view.setFixedSize(QSize(1080, 720))
+                self.scene.setSceneRect(0, 0, 1080 , 720)
             self.view.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
             
             for item in self.scene.items():
@@ -301,11 +313,22 @@ class MainWindow(QWidget):
 
     def save_coordinates_to_json(self):
         if self.image_paths and len(self.scene.items()) != 0:
+
             image_path = self.image_paths[self.current_image_index]
             self.coordinates_data[image_path] = {}
             original_coordinates = {}
             original_coordinates[image_path] = {}
             self.toggle_painting(False)
+            scene_height = 0
+            scene_width = 0
+            image_height = 0
+            image_width = 0
+            with Image.open(image_path) as img:
+                original_image_size = img.size
+                if original_image_size is not None:
+                    scene_width = self.scene.width()
+                    scene_height = self.scene.height()
+                    image_width, image_height = original_image_size
             for item in self.scene.items():
                 if isinstance(item, GraphicsRectItem):
                     rect1 = item.mapToScene(item.rect().topLeft())
@@ -327,33 +350,28 @@ class MainWindow(QWidget):
                     rect2 = item.mapToScene(item.rect().topRight())
                     rect4 = item.mapFromScene(item.rect().bottomLeft())
 
-                    with Image.open(image_path) as img:
-                        original_image_size = img.size
-                    if original_image_size is not None:
-                        scene_width = self.scene.width()
-                        scene_height = self.scene.height()
-                        image_width, image_height = original_image_size
+                    x1_image = int((rect1.x() / scene_width) * image_width)
+                    y1_image = int((rect1.y() / scene_height) * image_height)
+                    x2_image = int((rect2.x() / scene_width) * image_width)
+                    y2_image = int((rect2.y() / scene_height) * image_height)
+                    x3_image = int((rect3.x() / scene_width) * image_width)
+                    y3_image = int((rect3.y() / scene_height) * image_height)
+                    x4_image = int((rect4.x() / scene_width) * image_width)
+                    y4_image = int((rect4.y() / scene_height) * image_height)
+                    temp_key = f"{x1_image}{y1_image}{x3_image}{y3_image}"
+                    original_coordinates[image_path][temp_key] = {
+                        'x1' : x1_image,
+                        'y1' : y1_image,
+                        'x2' : x2_image,
+                        'y2' : y2_image,
+                        'x3' : x3_image,
+                        'y3' : y3_image,
+                        'x4' : x4_image,
+                        'y4' : y4_image,
+                    }
+                    print(original_coordinates[image_path][temp_key])
+                
 
-                        x1_image = int((rect1.x() / scene_width) * image_width)
-                        y1_image = int((rect1.y() / scene_height) * image_height)
-                        x2_image = int((rect2.x() / scene_width) * image_width)
-                        y2_image = int((rect2.y() / scene_height) * image_height)
-                        x3_image = int((rect3.x() / scene_width) * image_width)
-                        y3_image = int((rect3.y() / scene_height) * image_height)
-                        x4_image = int((rect4.x() / scene_width) * image_width)
-                        y4_image = int((rect4.y() / scene_height) * image_height)
-                        temp_key = f"{x1_image}{y1_image}{x3_image}{y3_image}"
-                        original_coordinates[image_path][temp_key] = {
-                            'x1' : x1_image,
-                            'y1' : y1_image,
-                            'x2' : x2_image,
-                            'y2' : y2_image,
-                            'x3' : x3_image,
-                            'y3' : y3_image,
-                            'x4' : x4_image,
-                            'y4' : y4_image,
-                        }
-                        print(original_coordinates[image_path][temp_key])
                 elif isinstance(item,CustomPolygonItem):
                     coord = item.getCoordinates()
                     key = str(coord)
@@ -362,19 +380,19 @@ class MainWindow(QWidget):
                         'text': f"{coord[1]}_{coord[2]}"
                     }
                     self.coordinates_data[image_path][key] = data
-                    with Image.open(image_path) as img:
-                        original_image_size = img.size
-                        if original_image_size is not None:
-                            scene_width = self.scene.width()
-                            scene_height = self.scene.height()
-                            image_width, image_height = original_image_size
 
-                            print(coord)
-                            # coord_image = [(coord[i][0] / scene_width) * image_width, (coord[i][1] / scene_height) * image_height for i in coord]
-                            temp_key = str(coord)
-                            original_coordinates[image_path][temp_key] = {
-                                'coordinates': coord
-                            }
+                    coord_image = []
+                    for c in coord:
+                        x1 = c[0]
+                        y1 = c[1]
+                        x1 = int((x1/scene_width)*image_width)
+                        y1 = int((y1/scene_height)*image_height)
+                        coord_image.append([x1,y1])
+                    temp_key = str(coord_image)
+                    print(coord_image)
+                    original_coordinates[image_path][temp_key] = {
+                        'coordinates': coord_image
+                    }
 
             for i in range(self.scroll_layout.count()):
                 item = self.scroll_layout.itemAt(i)
@@ -426,9 +444,19 @@ class MainWindow(QWidget):
                 close_timer.setSingleShot(True)
                 close_timer.timeout.connect(message_box.close)
                 close_timer.start(3000)
-            # elif(len(self.coordinates_data[self.image_paths[self.current_image_index]]) == self.scene.items()):
+
             else:
-                # Bounding boxes are present
+                scene_height = 0
+                scene_width = 0
+                image_height = 0
+                image_width = 0
+                image_path = self.image_paths[self.current_image_index]
+                with Image.open(image_path) as img:
+                    original_image_size = img.size
+                    if original_image_size is not None:
+                        scene_width = self.scene.width()
+                        scene_height = self.scene.height()
+                        image_width, image_height = original_image_size
                 selected_item_r = None
                 selected_item_p = None
                 for item in self.scene.items():
@@ -443,7 +471,6 @@ class MainWindow(QWidget):
                     rect = selected_item_r.mapToScene(selected_item_r.rect().topLeft())
                     rect2 = selected_item_r.mapToScene(selected_item_r.rect().bottomRight())
                     data = f"{int(rect.x())}_{int(rect.y())}_{int(rect2.x())}_{int(rect2.y())}"
-                    pattern = f"{int(rect.x())}_{int(rect.y())}_{int(rect2.x())}_{int(rect2.y())}"
                     self.scene.removeItem(selected_item_r)
 
                     image_path = self.image_paths[self.current_image_index]
@@ -458,14 +485,12 @@ class MainWindow(QWidget):
                                     del self.coordinates_data[image_path][key]
                                     print("deleted rectangle")
                                     break
-
+                    
 
                     # Delete the corresponding JSON file and image file
                     image_name = os.path.splitext(os.path.basename(image_path))[0]
                     coordinates_folder = os.path.join(os.path.dirname(image_path), "coordinates", image_name)
-                    image_folder = os.path.join(os.path.dirname(image_path), "image", image_name)
                     json_file_pattern = os.path.join(coordinates_folder, f"{image_name}_coordinates.json")
-                    image_file_pattern = os.path.join(image_folder, f"{image_name}_rectangle_{pattern}.png")
 
                     # Delete JSON files
                     json_files = glob.glob(json_file_pattern)
@@ -488,16 +513,29 @@ class MainWindow(QWidget):
                             with open(json_file, 'w') as f:
                                 json.dump(data, f, indent=4)
                                 print(f"JSON file updated: {json_file}")
+                    
 
-                    # Delete image files
-                    image_files = glob.glob(image_file_pattern)
-                    for image_file in image_files:
-                        if os.path.exists(image_file):
-                            os.remove(image_file)
-                            print(f"Image file removed successfully: {image_file}")
+                    x1_image = int((rect.x() / scene_width) * image_width)
+                    y1_image = int((rect.y() / scene_height) * image_height)
+                    x3_image = int((rect2.x() / scene_width) * image_width)
+                    y3_image = int((rect2.y() / scene_height) * image_height)
+
+                    original_coordinates_folder = os.path.join(os.path.dirname(image_path), "orginal_coordinates", image_name)
+                    json_file2 = os.path.join(original_coordinates_folder, f"{image_name}_original_coordinates.json")
+                    if os.path.exists(json_file2):
+                        with open(json_file2, 'r') as f:
+                            data2 = json.load(f)
+                        for key, value in list(data2.items()):
+                            if key == f"{x1_image}{y1_image}{x3_image}{y3_image}":
+                                del data2[key]
+                                break
+                        
+                        with open(json_file2, 'w') as f:
+                            json.dump(data2, f, indent=4)
+                            print(f"JSON file updated: {json_file}")
 
                     print("Item removed successfully.")
-                    # self.load_image()
+
                 elif selected_item_p:
                     image_path = self.image_paths[self.current_image_index]
                     key = str(selected_item_p.getCoordinates())
@@ -507,9 +545,7 @@ class MainWindow(QWidget):
                         del self.coordinates_data[image_path][key]
                         image_name = os.path.splitext(os.path.basename(image_path))[0]
                         coordinates_folder = os.path.join(os.path.dirname(image_path), "coordinates", image_name)
-                        image_folder = os.path.join(os.path.dirname(image_path), "image", image_name)
                         json_file_pattern = os.path.join(coordinates_folder, f"{image_name}_coordinates.json")
-                        image_file_pattern = os.path.join(image_folder, f"{image_name}_rectangle_{key}.png")
                         json_files = glob.glob(json_file_pattern)
                         for json_file in json_files:
                             if os.path.exists(json_file):
@@ -525,16 +561,31 @@ class MainWindow(QWidget):
                                 with open(json_file, 'w') as f:
                                     json.dump(data, f, indent=4)
                                     print(f"JSON file updated: {json_file}")
-
-                        # Delete image files
-                        image_files = glob.glob(image_file_pattern)
-                        for image_file in image_files:
-                            if os.path.exists(image_file):
-                                os.remove(image_file)
-                                print(f"Image file removed successfully: {image_file}")
+                        coord = selected_item_p.getCoordinates()
+                        coord_image = []
+                        for c in coord:
+                            x1 = c[0]
+                            y1 = c[1]
+                            x1 = int((x1/scene_width)*image_width)
+                            y1 = int((y1/scene_height)*image_height)
+                            coord_image.append([x1,y1])
+                        temp_key = str(coord_image)
+                        original_coordinates_folder = os.path.join(os.path.dirname(image_path), "orginal_coordinates", image_name)
+                        json_file2 = os.path.join(original_coordinates_folder, f"{image_name}_original_coordinates.json")
+                        if os.path.exists(json_file2):
+                            with open(json_file2, 'r') as f:
+                                data2 = json.load(f)
+                            for key, value in list(data2.items()):
+                                if key == temp_key:
+                                    del data2[key]
+                                    break
+                            
+                            with open(json_file2, 'w') as f:
+                                json.dump(data2, f, indent=4)
+                                print(f"JSON file updated: {json_file}")
 
                         print("Item removed successfully.")
-                        # self.load_image()
+
 
                 else:
                     message_box = QMessageBox(self)
