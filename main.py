@@ -411,7 +411,7 @@ class MainWindow(QWidget):
             image_name = os.path.splitext(os.path.basename(image_path))[0]
             coordinates_folder = os.path.join(os.path.dirname(image_path), "coordinates", image_name)
             os.makedirs(coordinates_folder, exist_ok=True)
-            original_coordinates_folder = os.path.join(os.path.dirname(image_path), "orginal_coordinates", image_name)
+            original_coordinates_folder = os.path.join(os.path.dirname(image_path), "original_coordinates", image_name)
             os.makedirs(original_coordinates_folder, exist_ok=True)
 
             json_file = os.path.join(coordinates_folder, f"{image_name}_coordinates.json")
@@ -520,7 +520,7 @@ class MainWindow(QWidget):
                     x3_image = int((rect2.x() / scene_width) * image_width)
                     y3_image = int((rect2.y() / scene_height) * image_height)
 
-                    original_coordinates_folder = os.path.join(os.path.dirname(image_path), "orginal_coordinates", image_name)
+                    original_coordinates_folder = os.path.join(os.path.dirname(image_path), "original_coordinates", image_name)
                     json_file2 = os.path.join(original_coordinates_folder, f"{image_name}_original_coordinates.json")
                     if os.path.exists(json_file2):
                         with open(json_file2, 'r') as f:
@@ -570,7 +570,7 @@ class MainWindow(QWidget):
                             y1 = int((y1/scene_height)*image_height)
                             coord_image.append([x1,y1])
                         temp_key = str(coord_image)
-                        original_coordinates_folder = os.path.join(os.path.dirname(image_path), "orginal_coordinates", image_name)
+                        original_coordinates_folder = os.path.join(os.path.dirname(image_path), "original_coordinates", image_name)
                         json_file2 = os.path.join(original_coordinates_folder, f"{image_name}_original_coordinates.json")
                         if os.path.exists(json_file2):
                             with open(json_file2, 'r') as f:
@@ -739,7 +739,7 @@ class MainWindow(QWidget):
             image_path = self.image_paths[self.current_image_index]
             image_name = os.path.splitext(os.path.basename(image_path))[0]
             coordinates_folder = os.path.join(os.path.dirname(image_path), "coordinates", image_name)
-            image_folder = os.path.join(os.path.dirname(image_path), "image", image_name)
+            original_coordinates_folder = os.path.join(os.path.dirname(image_path), "original_coordinates", image_name)
 
             # Delete JSON file for the current image
             json_file = os.path.join(coordinates_folder, f"{image_name}_coordinates.json")
@@ -748,18 +748,14 @@ class MainWindow(QWidget):
                 print(f"JSON file removed successfully: {json_file}")
             else:
                 print(f"JSON file does not exist: {json_file}")
-
-            # Delete cropped image file for the current image
-            pattern = os.path.join(image_folder, f"{image_name}_*.png")
-            files_to_remove = glob.glob(pattern)
             
-            if files_to_remove:
-                for file_path in files_to_remove:
-                    os.remove(file_path)
-                    print(f"File removed successfully: {file_path}")
-            else:
-                print(f"No files found with the pattern: {pattern}")
+            original_json = os.path.join(original_coordinates_folder,f"{image_name}_original_coordinates.json")
 
+            if os.path.exists(original_json):
+                os.remove(original_json)
+                print("removed")
+            else:
+                print(f"{original_json}")
             # Remove the current image from coordinates_data
             if image_path in self.coordinates_data:
                 del self.coordinates_data[image_path]
