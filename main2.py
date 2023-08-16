@@ -692,9 +692,9 @@ class MainWindow(QWidget):
             if image_path in self.coordinates_data:
                 saved_rectangles = len(self.coordinates_data[image_path])
                 unsaved_rectangles = len(self.scene.items())
-                if unsaved_rectangles > saved_rectangles:
+                if unsaved_rectangles - 1 > saved_rectangles:
                     reply = QMessageBox.question(self, "Unsaved Changes",
-                                                 f"There are {unsaved_rectangles - saved_rectangles} unsaved rectangles on the current image.\n"
+                                                 f"There are {unsaved_rectangles - saved_rectangles - 1} unsaved rectangles on the current image.\n"
                                                  f"Do you want to save the changes before moving to the previous image?",
                                                  QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
                     if reply == QMessageBox.Yes:
@@ -715,9 +715,9 @@ class MainWindow(QWidget):
             if image_path in self.coordinates_data:
                 saved_rectangles = len(self.coordinates_data[image_path])
                 unsaved_rectangles = len(self.scene.items())
-                if unsaved_rectangles > saved_rectangles:
+                if unsaved_rectangles - 1 > saved_rectangles:
                     reply = QMessageBox.question(self, "Unsaved Changes",
-                                                f"There are {unsaved_rectangles - saved_rectangles} unsaved rectangles or polygons on the current image.\n"
+                                                f"There are {unsaved_rectangles - saved_rectangles - 1} unsaved rectangles or polygons on the current image.\n"
                                                 "Do you want to save the changes before moving to the next image?",
                                                 QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
                     if reply == QMessageBox.Yes:
