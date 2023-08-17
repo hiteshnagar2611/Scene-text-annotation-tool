@@ -78,6 +78,7 @@ class MainWindow(QWidget):
         self.text_data = {}
         self.message_box = QMessageBox()
         self.image_path = ""
+        self.model_activate = False
 
         self.button_prev = QPushButton("Previous")
         self.button_prev.clicked.connect(self.button_click_prev)
@@ -90,6 +91,12 @@ class MainWindow(QWidget):
         self.button_save = AnimatedButton1("Save")
         self.button_save.clicked.connect(self.save_coordinates_to_json)
         self.button_save.setFixedSize(self.size().width()//4,self.size().height()//13)
+
+        self.button_zoomIn = QPushButton("Zoom +")
+        self.button_zoomOut = QPushButton("Zoom -")
+
+        self.button_zoomIn.clicked.connect(self.zoomIn)
+        self.button_zoomOut.clicked.connect(self.zoomOut)
     
         self.increase_rot = QPushButton('R+')
         self.decrease_rot = QPushButton('R-')
@@ -124,6 +131,7 @@ class MainWindow(QWidget):
         self.button_reset.setFixedSize(self.size().width()//4,self.size().height()//13)
         self.button_ai_modale_load = QPushButton("Model_load")
         self.button_ai_modale_load.setFixedSize(self.size().width()//4,self.size().height()//13)
+        self.button_ai_modale_load.setStyleSheet("background-color : red")
         
         self.slider = QSlider(Qt.Horizontal)
         self.slider.setMinimum(-360)
@@ -147,6 +155,8 @@ class MainWindow(QWidget):
         hbox.addWidget(self.button_delete)  
         hbox.addWidget(self.button_reset)
         hbox.addWidget(self.button_ai_modale_load)
+        hbox.addWidget(self.button_zoomIn)
+        hbox.addWidget(self.button_zoomOut)
         hbox.setAlignment(Qt.AlignCenter)
         
         hbox2 = QHBoxLayout()
@@ -161,9 +171,9 @@ class MainWindow(QWidget):
         self.scene = GraphicsScene('',self.label_coordinates,self.coordinates_data,self.scroll_layout,self.rotation_value,self)
         self.pixmap = QPixmap()
         self.view = QGraphicsView(self.scene)
-        self.scene.setSceneRect(0, 0,1080, 720)
-        self.view.setFixedSize(QSize(1080,720))
+        self.scene.setSceneRect(0, 0,self.pixmap.width() , self.pixmap.height())
         self.view.setScene(self.scene)
+        self.view.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
 
         self.view_box = QVBoxLayout()
         self.view_box.addWidget(self.view)
@@ -253,21 +263,33 @@ class MainWindow(QWidget):
                 self.current_image_index = 0
         self.load_image()
 
+    def zoomIn(self):
+        try:
+            current_scale = self.view.transform().m11() # Get the current horizontal scale factor
+            new_scale = min(current_scale * 1.2, 1.5)  # Calculate the new scale factor with a limit
+            self.view.setTransform(QTransform().scale(new_scale, new_scale))  # Apply the new scale
+        except Exception as e:
+            print("Error while zooming in:", e)
+
+    def zoomOut(self):
+        try:
+            current_scale = self.view.transform().m11()  # Get the current horizontal scale factor
+            new_scale = max(current_scale * 0.8, 0.5)  # Calculate the new scale factor with a limit
+            self.view.setTransform(QTransform().scale(new_scale, new_scale))  # Apply the new scale
+        except Exception as e:
+            print("Error while zooming out:", e)
+
     def load_image(self):
         self.load_coordinates_from_json()
+        self.scene.clear()
         if self.image_paths:
-            
+            self.scene.clear()
             image_path = self.image_paths[self.current_image_index]
-            self.scene.image= image_path
             self.pixmap = QPixmap(image_path)
-            if(self.pixmap.width() <= 1080 or self.pixmap.height() <= 720):
-                self.view.setFixedSize(QSize(self.pixmap.width(),self.pixmap.height()))
-                self.scene.setSceneRect(0,0,self.pixmap.width(),self.pixmap.height())
-            else:
-                self.view.setFixedSize(QSize(1080, 720))
-                self.scene.setSceneRect(0, 0, 1080 , 720)
-            self.view.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
-            
+            self.scene.setSceneRect(0, 0, self.pixmap.width(), self.pixmap.height()) 
+            self.background_image_item = QGraphicsPixmapItem(self.pixmap)
+            self.scene.addItem(self.background_image_item)
+                
             for item in self.scene.items():
                 if isinstance(item, GraphicsRectItem):
                     self.scene.removeItem(item)
@@ -291,19 +313,33 @@ class MainWindow(QWidget):
                             self.scene.addItem(item)
                             t = CustomLineEdit(key,self.scene,self.scroll_layout)
                             self.text_data[image_path][t.index] = t
-                            t.setText(data['text'])
+                            if 'text' in data:
+                                t.setText(data['text'])
                             t.setCursorPosition(0)
                             self.scroll_layout.addWidget(t)
                         else:   
-                            item = GraphicsRectItem(QRectF(QPointF(0,0),QSizeF(data['width'],data['height'])))
-                            # print(data['x2'] - data['x1'],data['y2'] - data['y1'])
+                            if 'width' not in data or 'height' not in data:
+                                x1 = data['x1']
+                                x2 = data['x2']
+                                x3 = data['x3']
+                                x4 = data['x4']
+                                y1 = data['y1']
+                                y2 = data['y2']
+                                y3 = data['y3']
+                                y4 = data['y4']
+                                width = math.sqrt((x4 - x1)**2 + (y4 - y1)**2)**0.5
+                                height = math.sqrt((x2 - x3)**2 + (y2 - y3)**2)**0.5
+                                item = GraphicsRectItem(QRectF(QPointF(0,0),QSizeF(width,height)))
+                            else:
+                                item = GraphicsRectItem(QRectF(QPointF(0,0),QSizeF(data['width'],data['height'])))
                             item.moveBy(data['x1'], data['y1'])
-                            item.setRotation(data['rotation'])
+                            if 'rotation' in data:
+                                item.setRotation(data['rotation'])
                             self.scene.addItem(item)
-                            print(key)
                             t = CustomLineEdit(key,self.scene,self.scroll_layout)
                             self.text_data[image_path][t.index] = t
-                            t.setText(data['text'])
+                            if 'text' in data:
+                                t.setText(data['text'])
                             t.setCursorPosition(0)
                             self.scroll_layout.addWidget(t)
                     self.scrollable.setWidget(self.scroll_widget)
@@ -633,21 +669,24 @@ class MainWindow(QWidget):
         self.selected_index = -1
 
     def load_coordinates_from_json(self):
-        self.coordinates_data = {}
-        for image_path in self.image_paths:
-            image_name = os.path.splitext(os.path.basename(image_path))[0]
-            coordinates_folder = os.path.join(os.path.dirname(image_path), "coordinates")
-            if os.path.exists(coordinates_folder) and os.path.isdir(coordinates_folder):
-                image_coordinates_folder = os.path.join(coordinates_folder, image_name)
-                if os.path.exists(image_coordinates_folder) and os.path.isdir(image_coordinates_folder):
-                    json_file = os.path.join(image_coordinates_folder, f"{image_name}_coordinates.json")
-                    if os.path.exists(json_file):
-                        with open(json_file, "r") as f:
-                            self.coordinates_data[image_path] = json.load(f)
+        if self.model_activate == False:
+            self.coordinates_data = {}
+            for image_path in self.image_paths:
+                image_name = os.path.splitext(os.path.basename(image_path))[0]
+                coordinates_folder = os.path.join(os.path.dirname(image_path), "coordinates")
+                if os.path.exists(coordinates_folder) and os.path.isdir(coordinates_folder):
+                    image_coordinates_folder = os.path.join(coordinates_folder, image_name)
+                    if os.path.exists(image_coordinates_folder) and os.path.isdir(image_coordinates_folder):
+                        json_file = os.path.join(image_coordinates_folder, f"{image_name}_coordinates.json")
+                        if os.path.exists(json_file):
+                            with open(json_file, "r") as f:
+                                self.coordinates_data[image_path] = json.load(f)
+                    else:
+                        print(f"Coordinates folder not found for image: {image_name}")
                 else:
                     print(f"Coordinates folder not found for image: {image_name}")
-            else:
-                print(f"Coordinates folder not found for image: {image_name}")
+        else:
+            self.coordinates_data = self.model_coord.copy()
         # print(self.coordinates_data)
 
     def button_click_prev(self):
@@ -656,9 +695,9 @@ class MainWindow(QWidget):
             if image_path in self.coordinates_data:
                 saved_rectangles = len(self.coordinates_data[image_path])
                 unsaved_rectangles = len(self.scene.items())
-                if unsaved_rectangles > saved_rectangles:
+                if unsaved_rectangles - 1 > saved_rectangles:
                     reply = QMessageBox.question(self, "Unsaved Changes",
-                                                 f"There are {unsaved_rectangles - saved_rectangles} unsaved rectangles on the current image.\n"
+                                                 f"There are {unsaved_rectangles - saved_rectangles - 1} unsaved rectangles on the current image.\n"
                                                  f"Do you want to save the changes before moving to the previous image?",
                                                  QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
                     if reply == QMessageBox.Yes:
@@ -679,9 +718,9 @@ class MainWindow(QWidget):
             if image_path in self.coordinates_data:
                 saved_rectangles = len(self.coordinates_data[image_path])
                 unsaved_rectangles = len(self.scene.items())
-                if unsaved_rectangles > saved_rectangles:
+                if unsaved_rectangles - 1 > saved_rectangles:
                     reply = QMessageBox.question(self, "Unsaved Changes",
-                                                f"There are {unsaved_rectangles - saved_rectangles} unsaved rectangles or polygons on the current image.\n"
+                                                f"There are {unsaved_rectangles - saved_rectangles - 1} unsaved rectangles or polygons on the current image.\n"
                                                 "Do you want to save the changes before moving to the next image?",
                                                 QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
                     if reply == QMessageBox.Yes:
@@ -735,7 +774,7 @@ class MainWindow(QWidget):
                     item.setSelected(False)
     
     def reset_image(self):
-        if self.image_paths:
+        if self.image_paths and self.model_activate == False:
             image_path = self.image_paths[self.current_image_index]
             image_name = os.path.splitext(os.path.basename(image_path))[0]
             coordinates_folder = os.path.join(os.path.dirname(image_path), "coordinates", image_name)
@@ -761,33 +800,41 @@ class MainWindow(QWidget):
                 del self.coordinates_data[image_path]
 
             self.load_image()
-
+        elif self.model_activate:
+            self.load_image()
         self.repaint()
-        self.call_modale()
 
     def call_modale(self):
-        with open("folder_path.txt", "r") as file:
-            folder_path = file.read().strip()
+        if self.model_activate == False:
+            folder_path = askdirectory(title="Select Folder with coordinates")
+            if folder_path:
+                self.model_activate = True
+                self.button_ai_modale_load.setStyleSheet("background-color : green")
+                self.model_coord = {}
+                for image_path in self.image_paths:
+                    image_name = os.path.splitext(os.path.basename(image_path))[0]
+                    if os.path.exists(folder_path) and os.path.isdir(folder_path):
+                        image_coordinates_folder = os.path.join(folder_path, image_name)
+                        print(str(image_coordinates_folder))
+                        if os.path.exists(image_coordinates_folder) and os.path.isdir(image_coordinates_folder):
+                            for json_file in os.listdir(image_coordinates_folder):
+                                if json_file.endswith(".json"):
+                                    file = os.path.join(image_coordinates_folder,json_file)
+                                    with open(file, "r") as f:
+                                        # print(json.load(f))
+                                        self.model_coord[image_path] = json.load(f)
+                        else:
+                            print(f"1. Coordinates folder not found for image: {image_name}")
+                    else:
+                            print(f"2. Coordinates folder not found for image: {image_name}")
+            print(self.model_coord)
+            self.load_image()
+        else:
+            self.model_activate = False
+            self.button_ai_modale_load.setStyleSheet("background-color : red")
 
 
-        source_directory = r"E:\x\IITJ_project\pro\ai"  # Replace with the desired destination folder path
-        
-        for root, dirs, files in os.walk(source_directory):
-    # Create the corresponding subdirectory in the destination directory
-            for dir_name in dirs:
-                source_path = os.path.join(root, dir_name)
-                destination_path = os.path.join(folder_path, os.path.relpath(source_path, source_directory))
-                os.makedirs(destination_path, exist_ok=True)
-
-        # Copy files from the source to the destination directory
-        for root, dirs, files in os.walk(source_directory):
-            for file_name in files:
-                source_path = os.path.join(root, file_name)
-                destination_path = os.path.join(folder_path, os.path.relpath(source_path, source_directory))
-                shutil.copy2(source_path, destination_path)
-        
-        self.load_image()
-        self.load_coordinates_from_json()
+        # self.load_coordinates_from_json()
 
     def save_last_image_path(self):
         if self.current_image_index < len(self.image_paths):
@@ -809,6 +856,8 @@ class MainWindow(QWidget):
                 point = item.rect().topLeft()
                 value += int(self.rotation_value.text())
                 # item.setTransformOriginPoint(point)
+
+                value = (value)%360
                 item.setRotation(value/2)
                 self.rotation_value.setText(str(int(value)))
                 # if(value >= 360 or value <= -360):
@@ -825,7 +874,7 @@ class MainWindow(QWidget):
             desktop = QtWidgets.QApplication.desktop()
             screen_rect = desktop.availableGeometry(desktop.primaryScreen())
             splash.move(screen_rect.center() - splash.rect().center())
-            splash.setFixedSize(splash_pix.size())
+            #splash.setFixedSize(splash_pix.size())
             splash.setMask(splash_pix.mask())
         except Exception as e:
             print("Error loading image:", e) 
@@ -875,7 +924,7 @@ class MainWindow(QWidget):
                 desktop = QtWidgets.QApplication.desktop()
                 screen_rect = desktop.availableGeometry(desktop.primaryScreen())
                 splash.move(screen_rect.center() - splash.rect().center())
-                splash.setFixedSize(splash_pix.size())
+                #splash.setFixedSize(splash_pix.size())
                 splash.setMask(splash_pix.mask())
             except Exception as e:
                 print("Error loading image:", e) 

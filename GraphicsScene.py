@@ -68,9 +68,13 @@ class CustomPolygonItem(QGraphicsPolygonItem):
         painter.drawPath(path)
 
         # Draw size handles
+        painter.setRenderHint(QPainter.Antialiasing)
+        if self.isSelected():
+            painter.setBrush(QBrush(QColor(0, 255, 0, 255)))
+        else:
+            painter.setBrush(QBrush(QColor(255, 0, 0, 255)))
+        painter.setPen(QPen(QColor(0, 0, 0, 255), 1.0, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
         for handle in self.size_handles:
-            painter.setPen(self.size_handle_pen)
-            painter.setBrush(self.size_handle_brush)
             painter.drawEllipse(handle)
 
         # Draw the connecting line if the polygon has at least two points
@@ -118,9 +122,7 @@ class GraphicsScene(QtWidgets.QGraphicsScene):
         super(GraphicsScene, self).__init__(parent)
         self._start = QtCore.QPointF()
         self._current_rect_item = None
-        # self.background_image = QGraphicsPixmapItem()
         self.image = image
-        # self.setSceneRect(0,0,self.background_image.width(),self.background_image.height())
         self.label_c = label_coordinates
         self.coordinates_data = coor_data
         self.scroll_layout = scroll_layout
@@ -129,9 +131,11 @@ class GraphicsScene(QtWidgets.QGraphicsScene):
         self.currentItem = None
         self.polygons = []
         self.is_painting_activated = False
-        # self.background_image.setPixmap(QPixmap(self.image))
+        self.zoom_factor = 1.0
     def mousePressEvent(self, event):
-        if self.itemAt(event.scenePos(), QtGui.QTransform()) is None and not self.is_painting_activated:
+        if (not self.is_painting_activated and
+    not isinstance(self.itemAt(event.scenePos(), QtGui.QTransform()), GraphicsRectItem) and
+    not isinstance(self.itemAt(event.scenePos(), QtGui.QTransform()), CustomPolygonItem) and isinstance(self.itemAt(event.scenePos(), QtGui.QTransform()), QGraphicsPixmapItem)) :
             self._current_rect_item = GraphicsRectItem()
             self._current_rect_item.setBrush(QtCore.Qt.red)
             self._current_rect_item.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, True)
@@ -153,7 +157,7 @@ class GraphicsScene(QtWidgets.QGraphicsScene):
         return super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
-        if self._current_rect_item is not None:
+        if self._current_rect_item is not None and isinstance(self.itemAt(event.scenePos(), QtGui.QTransform()), QGraphicsPixmapItem):
             r = QtCore.QRectF(self._start, event.scenePos()).normalized()
             self._current_rect_item.setRect(r)
         super(GraphicsScene, self).mouseMoveEvent(event)
@@ -197,18 +201,8 @@ class GraphicsScene(QtWidgets.QGraphicsScene):
         super(GraphicsScene, self).mouseReleaseEvent(event)
     
     
-    def drawBackground(self, painter: QPainter, rect: 'QRectF'):
-        # Call the base implementation to draw the default background
-        super().drawBackground(painter, rect)
-        
-        # Draw custom background image
-        painter.drawImage(rect, QImage(self.image))
-        self.update()
-    
     def keyPressEvent(self, event: QKeyEvent) -> None:
         if event.matches(QKeySequence.Undo):
             if self.currentItem:
                 self.currentItem.polygon = self.currentItem.polygon[:-1]
                 self.currentItem.updateSizeHandles()
-
-    
