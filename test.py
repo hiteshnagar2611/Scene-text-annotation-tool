@@ -79,8 +79,8 @@ class MainWindow(QWidget):
         self.message_box = QMessageBox()
         self.image_path = ""
         self.model_activate = False
-        self.coordinates_lodaded = False
-
+        self.model_coordinates_loaded = {}
+        self.reset = False
 
         self.button_prev = QPushButton("Previous")
         self.button_prev.clicked.connect(self.button_click_prev)
@@ -258,6 +258,7 @@ class MainWindow(QWidget):
         for filename in os.listdir(folder):
             if filename.endswith(".jpg") or filename.endswith(".png") or filename.endswith(".jpeg"):
                 self.image_paths.append(os.path.join(folder, filename))
+                self.model_coordinates_loaded[os.path.join(folder, filename)] = False 
         if self.image_paths:
             self.load_last_image_path()  # Load the last image path if available
             if self.current_image_index >= len(self.image_paths):
@@ -681,31 +682,27 @@ class MainWindow(QWidget):
                     print(f"1. Coordinates folder not found for image: {image_name}")
             else:
                 print(f"2. Coordinates folder not found for image: {image_name}")
-        if(self.model_activate and self.coordinates_lodaded == False):
-            self.load_model_coordinates()
-            self.coordinates_lodaded = True
+        if(self.model_activate):
             image_path = self.image_paths[self.current_image_index]
-            if(image_path in self.model_coord_copy):
-                # print(self.coordinates_data[image_path])
-                if(image_path not in self.coordinates_data):
-                    self.coordinates_data[image_path] = {}
-                self.coordinates_data[image_path].update(self.model_coord_[image_path])
-            print(self.coordinates_data)
-        elif(self.model_activate and self.coordinates_lodaded == True):
-            self.coordinates_data = {}
-            image_path = self.image_paths[self.current_image_index]
-            image_name = os.path.splitext(os.path.basename(image_path))[0]
-            coordinates_folder = os.path.join(self.folder_path,"coordinates")
-            if os.path.exists(coordinates_folder) and os.path.isdir(coordinates_folder):
+            if(self.model_coordinates_loaded[image_path] == False):
+                self.load_model_coordinates()
+            elif(self.model_coordinates_loaded[image_path]):
+                if(self.reset):
+                    return 
+                self.coordinates_data = {}
+                image_name = os.path.splitext(os.path.basename(image_path))[0]
+                coordinates_folder = os.path.join(self.folder_path,"coordinates")
                 if os.path.exists(coordinates_folder) and os.path.isdir(coordinates_folder):
-                    json_file = os.path.join(coordinates_folder, f"{image_name}_coordinates.json")
-                    if os.path.exists(json_file):
-                        with open(json_file, "r") as f:
-                            self.coordinates_data[image_path] = json.load(f)
+                    if os.path.exists(coordinates_folder) and os.path.isdir(coordinates_folder):
+                        json_file = os.path.join(coordinates_folder, f"{image_name}_coordinates.json")
+                        if os.path.exists(json_file):
+                            with open(json_file, "r") as f:
+                                self.coordinates_data[image_path] = json.load(f)
+                    else:
+                        print(f"1. Coordinates folder not found for image: {image_name}")
                 else:
-                    print(f"1. Coordinates folder not found for image: {image_name}")
-            else:
-                print(f"2. Coordinates folder not found for image: {image_name}")
+                    print(f"2. Coordinates folder not found for image: {image_name}")
+
 
     def button_click_prev(self):
         if self.scene.items():
@@ -804,11 +801,24 @@ class MainWindow(QWidget):
             # Remove the current image from coordinates_data
             if image_path in self.coordinates_data:
                 del self.coordinates_data[image_path]
+            
+            self.load_image()
 
-            self.load_image()
         elif self.model_activate:
-            self.coordinates_data[self.image_paths[self.current_image_index]] = {}
+            self.reset = True
+            self.coordinates_data = {}
+            image_path = self.image_paths[self.current_image_index]
+            image_name = os.path.splitext(os.path.basename(image_path))[0]
+            if os.path.exists(self.model_folder_path) and os.path.isdir(self.model_folder_path):
+                if os.path.exists(self.model_folder_path) and os.path.isdir(self.model_folder_path):
+                    json_file = os.path.join(self.model_folder_path, f"{image_name}_coordinates.json")
+                    if json_file.endswith(".json"):
+                        file = os.path.join(self.model_folder_path,json_file)
+                        if(os.path.exists(file)):
+                            with open(file, "r") as f:
+                                self.coordinates_data[image_path] = json.load(f)
             self.load_image()
+            self.reset = False
         self.repaint()
 
     def call_modale(self):
@@ -835,11 +845,15 @@ class MainWindow(QWidget):
                     if(os.path.exists(file)):
                         with open(file, "r") as f:
                             self.model_coord[image_path] = json.load(f)
+                        coordinates_folder = os.path.join(self.folder_path,"coordinates")
+                        json_file = os.path.join(coordinates_folder, f"{image_name}_coordinates.json")
+                        self.model_coordinates_loaded[image_path] = True
+                        with open(json_file, "w") as f:
+                            json.dump(self.model_coord[image_path], f, indent=4)
             else:
                 print(f"1. Coordinates folder not found for image: {image_name}")
         else:
             print(f"2. Coordinates folder not found for image: {image_name}")
-        self.model_coord_copy = self.model_coord.copy()
     
     def save_last_image_path(self):
         if self.current_image_index < len(self.image_paths):
