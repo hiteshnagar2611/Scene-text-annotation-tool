@@ -79,7 +79,8 @@ class MainWindow(QWidget):
         self.message_box = QMessageBox()
         self.image_path = ""
         self.model_activate = False
-        self.model_coord_copy = {}
+        self.coordinates_lodaded = False
+
 
         self.button_prev = QPushButton("Previous")
         self.button_prev.clicked.connect(self.button_click_prev)
@@ -351,7 +352,6 @@ class MainWindow(QWidget):
 
             image_path = self.image_paths[self.current_image_index]
             self.coordinates_data[image_path] = {}
-            self.model_coord_copy[image_path] = {}
             original_coordinates = {}
             original_coordinates[image_path] = {}
             self.toggle_painting(False)
@@ -381,7 +381,6 @@ class MainWindow(QWidget):
                         'text': f"{int(rect1.x()), int(rect1.y())}"
                     }
                     self.coordinates_data[image_path][key] = data
-                    self.model_coord_copy[image_path][key] = data
 
                     rect2 = item.mapToScene(item.rect().topRight())
                     rect4 = item.mapFromScene(item.rect().bottomLeft())
@@ -415,7 +414,7 @@ class MainWindow(QWidget):
                         'text': f"{coord[1]}_{coord[2]}"
                     }
                     self.coordinates_data[image_path][key] = data
-                    self.model_coord_copy[image_path][key] = data
+
                     coord_image = []
                     for c in coord:
                         x1 = c[0]
@@ -521,7 +520,6 @@ class MainWindow(QWidget):
                                     if key_to_delete in self.text_data[image_path]:
                                         del self.text_data[image_path][key_to_delete]
                                     del self.coordinates_data[image_path][key]
-                                    del self.model_coord_copy[image_path][key]
                                     print("deleted rectangle")
                                     break
                     
@@ -579,7 +577,6 @@ class MainWindow(QWidget):
                     if key in self.coordinates_data[image_path]:
                         temp_data = self.coordinates_data[image_path][key]
                         del self.coordinates_data[image_path][key]
-                        del self.model_coord_copy[image_path][key]
                         image_name = os.path.splitext(os.path.basename(image_path))[0]
                         coordinates_folder = os.path.join(self.folder_path, "coordinates")
                         json_file1 = os.path.join(coordinates_folder, f"{image_name}_coordinates.json")
@@ -684,15 +681,31 @@ class MainWindow(QWidget):
                     print(f"1. Coordinates folder not found for image: {image_name}")
             else:
                 print(f"2. Coordinates folder not found for image: {image_name}")
-        if(self.model_activate):
+        if(self.model_activate and self.coordinates_lodaded == False):
             self.load_model_coordinates()
+            self.coordinates_lodaded = True
             image_path = self.image_paths[self.current_image_index]
             if(image_path in self.model_coord_copy):
                 # print(self.coordinates_data[image_path])
                 if(image_path not in self.coordinates_data):
                     self.coordinates_data[image_path] = {}
-                self.coordinates_data[image_path].update(self.model_coord_copy[image_path])
+                self.coordinates_data[image_path].update(self.model_coord_[image_path])
             print(self.coordinates_data)
+        elif(self.model_activate and self.coordinates_lodaded == True):
+            self.coordinates_data = {}
+            image_path = self.image_paths[self.current_image_index]
+            image_name = os.path.splitext(os.path.basename(image_path))[0]
+            coordinates_folder = os.path.join(self.folder_path,"coordinates")
+            if os.path.exists(coordinates_folder) and os.path.isdir(coordinates_folder):
+                if os.path.exists(coordinates_folder) and os.path.isdir(coordinates_folder):
+                    json_file = os.path.join(coordinates_folder, f"{image_name}_coordinates.json")
+                    if os.path.exists(json_file):
+                        with open(json_file, "r") as f:
+                            self.coordinates_data[image_path] = json.load(f)
+                else:
+                    print(f"1. Coordinates folder not found for image: {image_name}")
+            else:
+                print(f"2. Coordinates folder not found for image: {image_name}")
 
     def button_click_prev(self):
         if self.scene.items():
