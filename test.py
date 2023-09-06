@@ -845,11 +845,15 @@ class MainWindow(QWidget):
                     if(os.path.exists(file)):
                         with open(file, "r") as f:
                             self.model_coord[image_path] = json.load(f)
+    
                         coordinates_folder = os.path.join(self.folder_path,"coordinates")
                         json_file = os.path.join(coordinates_folder, f"{image_name}_coordinates.json")
                         self.model_coordinates_loaded[image_path] = True
-                        with open(json_file, "w") as f:
-                            json.dump(self.model_coord[image_path], f, indent=4)
+                        if(os.path.exists(json_file) == False):
+                            with open(json_file, "w") as f:
+                                json.dump(self.model_coord[image_path], f, indent=4)
+                        else:
+                            print("Coordinates exist", {json_file})
             else:
                 print(f"1. Coordinates folder not found for image: {image_name}")
         else:
