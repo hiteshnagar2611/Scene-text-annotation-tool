@@ -453,6 +453,7 @@ class MainWindow(QWidget):
             json_file = os.path.join(coordinates_folder, f"{image_name}_coordinates.json")
             with open(json_file, "w") as f:
                 json.dump(self.coordinates_data[image_path], f, indent=4)
+            print(self.coordinates_data[image_path])
 
             json_file2 = os.path.join(original_coordinates_folder, f"{image_name}_original_coordinates.json")
             with open(json_file2, "w") as f:
@@ -683,27 +684,10 @@ class MainWindow(QWidget):
             else:
                 print(f"2. Coordinates folder not found for image: {image_name}")
         if(self.model_activate):
-            image_path = self.image_paths[self.current_image_index]
-            if(self.model_coordinates_loaded[image_path] == False):
-                self.load_model_coordinates()
-            elif(self.model_coordinates_loaded[image_path]):
-                if(self.reset):
-                    return 
-                self.coordinates_data = {}
-                image_name = os.path.splitext(os.path.basename(image_path))[0]
-                coordinates_folder = os.path.join(self.folder_path,"coordinates")
-                if os.path.exists(coordinates_folder) and os.path.isdir(coordinates_folder):
-                    if os.path.exists(coordinates_folder) and os.path.isdir(coordinates_folder):
-                        json_file = os.path.join(coordinates_folder, f"{image_name}_coordinates.json")
-                        if os.path.exists(json_file):
-                            with open(json_file, "r") as f:
-                                self.coordinates_data[image_path] = json.load(f)
-                    else:
-                        print(f"1. Coordinates folder not found for image: {image_name}")
-                else:
-                    print(f"2. Coordinates folder not found for image: {image_name}")
-
-
+            if(self.reset):
+                return
+            self.load_model_coordinates()
+    
     def button_click_prev(self):
         if self.scene.items():
             image_path = self.image_paths[self.current_image_index]
@@ -837,27 +821,29 @@ class MainWindow(QWidget):
         self.model_coord = {}
         image_path = self.image_paths[self.current_image_index]
         image_name = os.path.splitext(os.path.basename(image_path))[0]
+        coordinates_folder = os.path.join(self.folder_path,"coordinates")
+        json_file_coordinates = os.path.join(coordinates_folder, f"{image_name}_coordinates.json")
+        os.makedirs(coordinates_folder, exist_ok=True)
+
         if os.path.exists(self.model_folder_path) and os.path.isdir(self.model_folder_path):
             if os.path.exists(self.model_folder_path) and os.path.isdir(self.model_folder_path):
                 json_file = os.path.join(self.model_folder_path, f"{image_name}_coordinates.json")
                 if json_file.endswith(".json"):
                     file = os.path.join(self.model_folder_path,json_file)
+                    if(os.path.exists(json_file_coordinates)):
+                        with open(json_file_coordinates , "r") as f:
+                            self.coordinates_data[image_path] = json.load(f)
                     if(os.path.exists(file)):
                         with open(file, "r") as f:
                             self.model_coord[image_path] = json.load(f)
-    
-                        coordinates_folder = os.path.join(self.folder_path,"coordinates")
-                        json_file = os.path.join(coordinates_folder, f"{image_name}_coordinates.json")
-                        self.model_coordinates_loaded[image_path] = True
-                        if(os.path.exists(json_file) == False):
-                            with open(json_file, "w") as f:
+                    if not os.path.exists(json_file_coordinates):
+                        if not os.path.exists(file):
+                            return
+                        with open(json_file_coordinates, "w") as f:
+                            if(image_path in self.model_coord):
                                 json.dump(self.model_coord[image_path], f, indent=4)
-                        else:
-                            print("Coordinates exist", {json_file})
-            else:
-                print(f"1. Coordinates folder not found for image: {image_name}")
-        else:
-            print(f"2. Coordinates folder not found for image: {image_name}")
+                                self.coordinates_data[image_path] = self.model_coord[image_path]
+                                
     
     def save_last_image_path(self):
         if self.current_image_index < len(self.image_paths):
